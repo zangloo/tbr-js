@@ -164,29 +164,19 @@ function loadConfig() {
 			configuration.debug = true;
 		else
 			configuration.debug = config.get('debug');
-		let renderName = config.get('renderName');
-		const render = renders[renderName];
-		if (!render)
-			errorExit('No render named: ' + renderName);
-		configuration.renderName = renderName;
-		configuration.render = render;
+		configuration.renderName = config.get('renderName');
 		configuration.searchPattern = config.get('searchPattern');
 		if (!filename)
 			filename = path.resolve(config.get('lastReading'));
 		filename = path.resolve(filename);
 		configuration.lastReading = filename;
 		configuration.history = config.get('history');
-		if (!configuration.history.some(entry => {
+		configuration.history.some(entry => {
 			if (entry.filename === configuration.lastReading) {
 				configuration.reading = copyReading(entry);
 				return true;
 			}
-		})) configuration.reading = {
-			filename: configuration.lastReading,
-			chapter: 0,
-			line: 0,
-			position: 0,
-		}
+		});
 	} else {
 		if (!filename)
 			errorExit('No file to open.');
@@ -205,6 +195,17 @@ function loadConfig() {
 		const text = yaml.dump(configuration);
 		writeFileSync(configFile, text);
 	}
+	const render = renders[configuration.renderName];
+	if (!render)
+		errorExit('No render named: ' + renderName);
+	configuration.render = render;
+	if (!configuration.reading)
+		configuration.reading = {
+			filename: configuration.lastReading,
+			chapter: 0,
+			line: 0,
+			position: 0,
+		}
 	return configuration;
 }
 
