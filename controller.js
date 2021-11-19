@@ -6,9 +6,11 @@
  */
 
 const {Draw, Region, controls} = require('termdraw');
+const readline = require('readline');
+const searchPrefix = 'Search: ';
 let exitAndSave;
 let context;
-let debugRegion;
+let statusRegion;
 let layout;
 
 function exit() {
@@ -59,29 +61,122 @@ function prev() {
 		doPrev();
 }
 
+function found(txt, line, pos) {
+	context.reverse = {
+		line: line,
+		start: pos,
+		end: pos + txt.length,
+	};
+	context.render.setupReverse(context);
+	return true;
+}
+
+function searchPatternReverse(pattern, startPosition) {
+	const reading = context.reading;
+	let lines = reading.content;
+	let line = reading.line;
+	let text = lines[line];
+	if (startPosition > 0)
+		text = text.substr(0, startPosition);
+	let i = line;
+	const regExp = new RegExp(pattern, 'g');
+	do {
+		let matches = [...text.matchAll(regExp)];
+		if (matches.length > 0) {
+			const result = matches[matches.length - 1];
+			return found(result[0], i, result.index)
+		}
+		if (i === 0) break;
+		i--;
+		text = lines[i];
+	} while (true)
+	return false;
+}
+
+function searchPattern(pattern, startPosition) {
+	if (!pattern) return false;
+	const reading = context.reading;
+	let lines = reading.content;
+	let line = reading.line;
+	let text = lines[line];
+	if (startPosition > 0)
+		text = text.substr(startPosition);
+	const regExp = new RegExp(pattern);
+	let result = regExp.exec(text);
+	if (result)
+		return found(result[0], line, startPosition + result.index)
+	else for (let i = line + 1; i < lines.length; i++) {
+		text = lines[i];
+		result = regExp.exec(text);
+		if (result)
+			return found(result[0], i, result.index);
+	}
+	return false;
+}
+
+function startSearch() {
+	const draw = context.draw;
+	statusRegion.clear();
+	render();
+	draw.pause(statusRegion, function (resume) {
+		const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+		rl.question(searchPrefix, pattern => {
+			rl.close();
+			resume();
+			context.searchPattern = pattern;
+			if (pattern.length > 0)
+				searchPattern(context.searchPattern, context.reading.position);
+			statusRegion.get_cursor = function () {
+				return null;
+			};
+			render();
+		});
+	})
+}
+
 function keypress(event) {
-	const key = typeof event === 'object' ? event.key : event;
+	const special = typeof event === 'object';
+	const key = special ? event.key : event;
 	switch (key) {
 		case 'h':
 			break;
 		case '/':
+			startSearch();
+			break;
+		case 'n':
+			if (searchPattern(context.searchPattern, context.reverse
+				? context.reverse.end
+				: context.reading.position))
+				render();
+			break;
+		case 'N':
+			if (searchPatternReverse(context.searchPattern, context.reverse
+				? context.reverse.start
+				: context.reading.position))
+				render();
 			break;
 		case ' ':
 		case 'next':
+			context.reverse = null;
 			next();
 			break;
 		case 'prior':
+			context.reverse = null;
 			prev();
 			break;
 		case 'up':
 		case 'right':
+			context.reverse = null;
 			break;
 		case 'down':
 		case 'left':
+			context.reverse = null;
 			break;
 		case 'home':
+			context.reverse = null;
 			break;
 		case 'end':
+			context.reverse = null;
 			break;
 		case 'q':
 		case '^[':
@@ -108,16 +203,16 @@ function render() {
 	const region = context.region;
 	region.clear();
 	context.render.draw(context);
+	let msg = `[${region.width()}:${region.height()}]${reading.book.toc[reading.chapter].name}(${reading.line}:${reading.position})`;
 	if (context.debug) {
 		const next = context.next;
-		let msg = `[${region.width()}:${region.height()}]${reading.book.toc[reading.chapter].name}(${reading.line}:${reading.position})`
 		if (next)
 			msg += `=>(${next.line}:${next.position})`;
 		else
 			msg += '->()';
-		debugRegion.clear();
-		debugRegion.str(0, 0, msg);
 	}
+	statusRegion.clear();
+	statusRegion.str(0, 0, msg);
 	context.draw.redraw(layout, true);
 }
 
@@ -129,28 +224,18 @@ function initRender() {
 	draw.on('resize', resize)
 	const width = draw.width();
 	const height = draw.height();
-	let children = [];
-	if (context.debug) {
-		context.region = new Region({width: width, height: height - 1});
-		debugRegion = new Region({width: width, height: 1});
-		children.push({
-			child: context.region,
-			fixed: height - 1,
-		}, {
-			child: debugRegion,
-			fixed: 1,
-		});
-	} else {
-		context.region = new Region({width: width, height: height});
-		children.push({
-			child: context.region,
-			fixed: height,
-		});
-	}
+	context.region = new Region({width: width, height: height - 1});
+	statusRegion = new Region({width: width, height: 1});
 	layout = new controls.HLayout({
 		width: width,
 		height: height,
-		children: children,
+		children: [{
+			child: context.region,
+			fixed: height - 1,
+		}, {
+			child: statusRegion,
+			fixed: 1,
+		}],
 	});
 }
 
@@ -159,22 +244,13 @@ function resize() {
 	const width = draw.width();
 	const height = draw.height();
 	layout.resize(width, height);
-
-	const children = [];
-	if (context.debug) {
-		children.push({
-			child: context.region,
-			fixed: height - 1,
-		}, {
-			child: debugRegion,
-			fixed: 1,
-		});
-	} else
-		children.push({
-			child: context.region,
-			fixed: height,
-		});
-	layout.set_children(children);
+	layout.set_children([{
+		child: context.region,
+		fixed: height - 1,
+	}, {
+		child: statusRegion,
+		fixed: 1,
+	}]);
 	render();
 }
 

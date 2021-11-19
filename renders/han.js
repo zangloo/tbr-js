@@ -61,9 +61,13 @@ function draw(context) {
 					chars = height - 2;
 			}
 		for (let y = 0; y < chars; y++) {
+			const reverse = context.reverse;
+			let format = null;
+			if (reverse && reverse.line === line && reverse.start <= position && reverse.end > position)
+				format = {reverse: true};
 			const char = text[position++];
 			const map = HCharMap[char];
-			region.chr(x, y + leading, map ? map : char);
+			region.chr(x, y + leading, map ? map : char, format);
 		}
 		if (position === lineLength) {
 			line++;
@@ -137,5 +141,29 @@ function prev(context) {
 	reading.position = position;
 }
 
+function setupReverse(context) {
+	let reverse = context.reverse;
+	if (reverse === null) return;
+	const region = context.region;
+	const height = region.height();
+	const reading = context.reading;
+	const line = reverse.line;
+	const text = reading.content[line]
+	const position = reverse.start;
+	let leading = 0;
+	if (withLeading(text))
+		leading = 2;
+	let pos = 0;
+	do {
+		if (pos + height - leading >= position)
+			break;
+		pos += height - leading;
+		leading = 0;
+	} while (true);
+	reading.line = line;
+	reading.position = pos;
+}
+
 exports.draw = draw;
 exports.prev = prev
+exports.setupReverse = setupReverse

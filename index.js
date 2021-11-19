@@ -7,7 +7,7 @@
  */
 
 const {program} = require('commander');
-let filename;
+let filename = null;
 program.version('0.1.0')
 	.option('-d, --debug', 'output extra debugging', false)
 	.argument('[filename]', "book file name")
@@ -70,6 +70,7 @@ function exitAndSave() {
 		debug: context.debug,
 		renderName: context.renderName,
 		lastReading: context.lastReading,
+		searchPattern: context.searchPattern,
 		history: history,
 	}
 	const reading = context.reading;
@@ -117,6 +118,12 @@ function loadConfig() {
 			default: null,
 			nullable: false,
 		},
+		searchPattern: {
+			doc: 'the last search pattern',
+			format: 'String',
+			default: null,
+			nullable: true,
+		},
 		history: {
 			doc: 'reading history',
 			format: 'historyArray',
@@ -163,6 +170,7 @@ function loadConfig() {
 			errorExit('No render named: ' + renderName);
 		configuration.renderName = renderName;
 		configuration.render = render;
+		configuration.searchPattern = config.get('searchPattern');
 		if (!filename)
 			filename = path.resolve(config.get('lastReading'));
 		filename = path.resolve(filename);
