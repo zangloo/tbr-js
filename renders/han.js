@@ -39,6 +39,8 @@ const HCharMap = {
 	'〗': '︗',
 }
 
+const leadingSpace = 2;
+
 function draw(context) {
 	const region = context.region;
 	const height = context.region.height();
@@ -56,9 +58,9 @@ function draw(context) {
 		let chars = left >= height ? height : left;
 		if (position === 0 && left > 0)
 			if (withLeading(text)) {
-				leading = 2;
-				if (chars > height - 2)
-					chars = height - 2;
+				leading = leadingSpace;
+				if (chars > height - leadingSpace)
+					chars = height - leadingSpace;
 			}
 		for (let y = 0; y < chars; y++) {
 			const reverse = context.reverse;
@@ -91,15 +93,15 @@ function withLeading(text) {
 	return leader !== ' ' && leader !== '\t' && leader !== '　';
 }
 
-function prev(context) {
-	function lengthWithLeading(text) {
-		const length = text.length;
-		if (withLeading(text))
-			return length + 2;
-		else
-			return length;
-	}
+function lengthWithLeading(text) {
+	const length = text.length;
+	if (withLeading(text))
+		return length + leadingSpace;
+	else
+		return length;
+}
 
+function prev(context) {
 	const region = context.region;
 	const height = region.height();
 	const width = Math.floor(region.width() / 2);
@@ -135,7 +137,7 @@ function prev(context) {
 		} while (p < position);
 		position = p;
 		if (withLeading(text))
-			position -= 2;
+			position -= leadingSpace;
 	}
 	reading.line = line;
 	reading.position = position;
@@ -152,7 +154,7 @@ function setupReverse(context) {
 	const position = reverse.start;
 	let leading = 0;
 	if (withLeading(text))
-		leading = 2;
+		leading = leadingSpace;
 	let pos = 0;
 	do {
 		if (pos + height - leading >= position)
@@ -164,6 +166,69 @@ function setupReverse(context) {
 	reading.position = pos;
 }
 
+function nextLine(context) {
+	if (!context.next) return false;
+	const reading = context.reading;
+	let line = reading.line;
+	const height = context.region.height();
+	const text = reading.content[line];
+	const textLength = lengthWithLeading(text);
+	let position = reading.position;
+	if (position === 0)
+		if (textLength <= height)
+			line++;
+		else if (withLeading(text))
+			position = height - leadingSpace
+		else
+			position = height;
+	else {
+		position += height;
+		if (position > textLength) {
+			position = 0;
+			line++;
+		}
+	}
+	reading.line = line;
+	reading.position = position;
+	return true;
+}
+
+function prevLine(context) {
+	const reading = context.reading;
+	const height = context.region.height();
+	let line = reading.line;
+	let position = reading.position;
+	if (position === 0)
+		if (line === 0)
+			return false;
+		else {
+			line--;
+			const text = reading.content[line];
+			const textLength = lengthWithLeading(text);
+			if (textLength <= height)
+				position = 0;
+			else {
+				do {
+					if (position + height > textLength)
+						break;
+					position += height;
+				} while (true);
+				if (withLeading(text))
+					position -= leadingSpace;
+			}
+		}
+	else {
+		position -= height;
+		if (position < 0)
+			position = 0;
+	}
+	reading.line = line;
+	reading.position = position;
+	return true;
+}
+
 exports.draw = draw;
 exports.prev = prev
 exports.setupReverse = setupReverse
+exports.nextLine = nextLine
+exports.prevLine = prevLine

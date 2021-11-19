@@ -71,7 +71,7 @@ function found(txt, line, pos) {
 	return true;
 }
 
-function searchPatternReverse(pattern, startPosition) {
+function searchPrev(pattern, startPosition) {
 	const reading = context.reading;
 	let lines = reading.content;
 	let line = reading.line;
@@ -93,7 +93,7 @@ function searchPatternReverse(pattern, startPosition) {
 	return false;
 }
 
-function searchPattern(pattern, startPosition) {
+function searchNext(pattern, startPosition) {
 	if (!pattern) return false;
 	const reading = context.reading;
 	let lines = reading.content;
@@ -125,13 +125,27 @@ function startSearch() {
 			resume();
 			context.searchPattern = pattern;
 			if (pattern.length > 0)
-				searchPattern(context.searchPattern, context.reading.position);
+				searchNext(context.searchPattern, context.reading.position);
 			statusRegion.get_cursor = function () {
 				return null;
 			};
 			render();
 		});
 	})
+}
+
+function goHome() {
+	const reading = context.reading;
+	reading.line = reading.position = 0;
+	render();
+}
+
+function goEnd() {
+	const reading = context.reading;
+	const content = reading.content;
+	reading.line = content.length - 1;
+	reading.position = content[reading.line].length;
+	prev();
 }
 
 function keypress(event) {
@@ -144,13 +158,13 @@ function keypress(event) {
 			startSearch();
 			break;
 		case 'n':
-			if (searchPattern(context.searchPattern, context.reverse
+			if (searchNext(context.searchPattern, context.reverse
 				? context.reverse.end
 				: context.reading.position))
 				render();
 			break;
 		case 'N':
-			if (searchPatternReverse(context.searchPattern, context.reverse
+			if (searchPrev(context.searchPattern, context.reverse
 				? context.reverse.start
 				: context.reading.position))
 				render();
@@ -167,16 +181,22 @@ function keypress(event) {
 		case 'up':
 		case 'right':
 			context.reverse = null;
+			if (context.render.prevLine(context))
+				render();
 			break;
 		case 'down':
 		case 'left':
 			context.reverse = null;
+			if (context.render.nextLine(context))
+				render();
 			break;
 		case 'home':
 			context.reverse = null;
+			goHome();
 			break;
 		case 'end':
 			context.reverse = null;
+			goEnd();
 			break;
 		case 'q':
 		case '^[':
