@@ -18,6 +18,7 @@ program.version('0.1.0')
 const options = program.opts();
 
 const requireDir = require('require-dir');
+const path = require("path");
 const {mkdirSync, existsSync, writeFileSync} = require('fs');
 const yaml = require('js-yaml');
 const loaders = requireDir('./loaders');
@@ -160,7 +161,10 @@ function loadConfig() {
 			errorExit('No render named: ' + renderName);
 		configuration.renderName = renderName;
 		configuration.render = render;
-		configuration.lastReading = filename ? filename : config.get('lastReading');
+		if (!filename)
+			filename = path.resolve(config.get('lastReading'));
+		filename = path.resolve(filename);
+		configuration.lastReading = filename;
 		configuration.history = config.get('history');
 		if (!configuration.history.some(entry => {
 			if (entry.filename === configuration.lastReading) {
@@ -176,12 +180,13 @@ function loadConfig() {
 	} else {
 		if (!filename)
 			errorExit('No file to open.');
+		var absolutePath = path.resolve(filename);
 		configuration = {
 			debug: options.debug,
 			renderName: 'han',
-			lastReading: filename,
+			lastReading: absolutePath,
 			history: [{
-				filename: filename,
+				filename: absolutePath,
 				chapter: 0,
 				line: 0,
 				position: 0,
