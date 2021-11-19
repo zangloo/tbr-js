@@ -8,7 +8,7 @@
 const {Draw, Region, controls} = require('termdraw');
 let exitAndSave;
 let context;
-let debug;
+let debugRegion;
 let layout;
 
 function exit() {
@@ -115,11 +115,10 @@ function render() {
 			msg += `=>(${next.line}:${next.position})`;
 		else
 			msg += '->()';
-		debug.clear();
-		debug.str(0, 0, msg);
-		context.draw.redraw(layout, true);
-	} else
-		context.draw.redraw(region, true);
+		debugRegion.clear();
+		debugRegion.str(0, 0, msg);
+	}
+	context.draw.redraw(layout, true);
 }
 
 function initRender() {
@@ -130,39 +129,52 @@ function initRender() {
 	draw.on('resize', resize)
 	const width = draw.width();
 	const height = draw.height();
+	let children = [];
 	if (context.debug) {
 		context.region = new Region({width: width, height: height - 1});
-		debug = new Region({width: width, height: 1});
-		layout = new controls.HLayout({
-			width: width,
-			height: height,
-			children: [{
-				child: context.region,
-				fixed: height - 1,
-			}, {
-				child: debug,
-				fixed: 1,
-			}],
+		debugRegion = new Region({width: width, height: 1});
+		children.push({
+			child: context.region,
+			fixed: height - 1,
+		}, {
+			child: debugRegion,
+			fixed: 1,
 		});
-	} else
+	} else {
 		context.region = new Region({width: width, height: height});
+		children.push({
+			child: context.region,
+			fixed: height,
+		});
+	}
+	layout = new controls.HLayout({
+		width: width,
+		height: height,
+		children: children,
+	});
 }
 
 function resize() {
 	const draw = context.draw;
 	const width = draw.width();
 	const height = draw.height();
+	layout.resize(width, height);
+
+	const children = [];
 	if (context.debug) {
-		layout.resize(width, height);
-		layout.set_children([{
+		children.push({
 			child: context.region,
 			fixed: height - 1,
 		}, {
-			child: debug,
+			child: debugRegion,
 			fixed: 1,
-		}])
+		});
 	} else
-		context.region.resize(width, height);
+		children.push({
+			child: context.region,
+			fixed: height,
+		});
+	layout.set_children(children);
 	render();
 }
 

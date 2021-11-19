@@ -153,7 +153,9 @@ function loadConfig() {
 		config.loadFile(configFile);
 		config.validate({allowed: 'strict'});
 		configuration = {}
-		if (!configuration.debug)
+		if (options.debug)
+			configuration.debug = true;
+		else
 			configuration.debug = config.get('debug');
 		let renderName = config.get('renderName');
 		const render = renders[renderName];
