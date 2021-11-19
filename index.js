@@ -190,7 +190,7 @@ function loadConfig() {
 	} else {
 		if (!filename)
 			errorExit('No file to open.');
-		var absolutePath = path.resolve(filename);
+		const absolutePath = path.resolve(filename);
 		configuration = {
 			debug: options.debug,
 			renderName: 'han',

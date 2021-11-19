@@ -4,7 +4,6 @@
  * Date: 2021/11/17
  * Time: 下午8:03
  */
-const {mkdtempSync} = require('fs');
 
 function each(obj, callback) {
 	Object.keys(obj).forEach(function (key) {

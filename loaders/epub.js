@@ -6,7 +6,6 @@
  */
 
 const {parseEpub} = require('@liprikon/epub-parser');
-const {Buffer} = require('buffer');
 const {loadFromString: loadHtml} = require('./html');
 
 function getChapter(index, callback) {
