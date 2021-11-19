@@ -1,0 +1,25 @@
+{
+  "name": "tbr",
+  "version": "1.0.0",
+  "description": "terminal book reader",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "terminal",
+    "ebook",
+    "reader"
+  ],
+  "author": "",
+  "license": "GPL2",
+  "dependencies": {
+    "commander": "^8.3.0",
+    "require-dir": "^1.2.0",
+    "@liprikon/epub-parser": "^2.0.25",
+    "html-to-text": "^8.1.0",
+    "charset-detector": "^0.0.2",
+    "termdraw": "^2.0.0",
+    "ansiterm": "^1.1.0"
+  }
+}
