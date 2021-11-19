@@ -116,17 +116,24 @@ function startSearch() {
 	statusRegion.clear();
 	render();
 	draw.pause(statusRegion, function (resume) {
-		const rl = readline.createInterface({input: process.stdin, output: process.stdout});
-		rl.question(searchPrefix, pattern => {
+		function stopReadonly(pattern) {
 			rl.close();
 			resume();
-			context.searchPattern = pattern;
-			if (pattern.length > 0)
+			if (pattern && pattern.length > 0) {
+				context.searchPattern = pattern;
 				searchNext(context.searchPattern, context.reading.position);
+			}
 			statusRegion.get_cursor = function () {
 				return null;
 			};
 			render();
+		}
+
+		const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+		rl.question(searchPrefix, stopReadonly);
+		rl.on('SIGINT', () => {
+			stopReadonly();
+			exit();
 		});
 	})
 }

@@ -39,7 +39,7 @@ const HCharMap = {
 	'〗': '︗',
 }
 
-const leadingSpace = 2;
+const {leadingSpace, lengthWithLeading, withLeading} = require('../common');
 
 function draw(context) {
 	const region = context.region;
@@ -84,21 +84,6 @@ function draw(context) {
 		line: line,
 		position: position
 	}
-}
-
-function withLeading(text) {
-	if (text.length === 0)
-		return false;
-	const leader = text[0];
-	return leader !== ' ' && leader !== '\t' && leader !== '　';
-}
-
-function lengthWithLeading(text) {
-	const length = text.length;
-	if (withLeading(text))
-		return length + leadingSpace;
-	else
-		return length;
 }
 
 function prev(context) {
