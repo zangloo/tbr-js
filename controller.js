@@ -6,13 +6,14 @@
  */
 
 const {Draw, Region, controls} = require('termdraw');
+let exitAndSave;
 let context;
 let debug;
 let layout;
 
 function exit() {
 	context.draw.close();
-	process.exit(0);
+	exitAndSave();
 }
 
 function next() {
@@ -177,7 +178,8 @@ function start() {
 	});
 }
 
-exports.start = function (c) {
+exports.start = function (c, exitAndSaveCallback) {
 	context = c;
+	exitAndSave = exitAndSaveCallback;
 	start();
 };

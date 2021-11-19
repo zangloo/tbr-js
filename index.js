@@ -7,10 +7,10 @@
  */
 
 const {program} = require('commander');
-let filename = '';
+let filename;
 program.version('0.1.0')
 	.option('-d, --debug', 'output extra debugging', false)
-	.argument('filename', "book file name")
+	.argument('[filename]', "book file name")
 	.action(f => {
 		filename = f;
 	})
@@ -18,6 +18,8 @@ program.version('0.1.0')
 const options = program.opts();
 
 const requireDir = require('require-dir');
+const {mkdirSync, existsSync, writeFileSync} = require('fs');
+const yaml = require('js-yaml');
 const loaders = requireDir('./loaders');
 const renders = requireDir('./renders');
 const common = require('./common');
@@ -40,28 +42,164 @@ function bookLoaded(book) {
 	if (options.debug)
 		console.debug('Book opened: ' + filename);
 	context.reading.book = book;
-	Controller.start(context);
+	Controller.start(context, exitAndSave);
 }
 
-const context = {
-	debug: options.debug,
-	render: renders.han,
-	reading: {
-		filename: filename,
-		content: null,
-		chapter: 3,
-		line: 14,
-		position: 148,
-	},
-};
+function errorExit(msg) {
+	console.error(msg);
+	process.exit(1);
+}
+
+function copyReading(src, dest) {
+	if (!dest)
+		dest = {};
+	dest.filename = src.filename;
+	dest.chapter = src.chapter;
+	dest.line = src.line;
+	dest.position = src.position;
+	return dest;
+}
+
+const configFolder = process.env.HOME + '/.config/tbr';
+const configFile = configFolder + '/tbr.yaml';
+
+function exitAndSave() {
+	const history = context.history;
+	const configuration = {
+		debug: context.debug,
+		renderName: context.renderName,
+		lastReading: context.lastReading,
+		history: history,
+	}
+	const reading = context.reading;
+	if (!history.some(entry => {
+		if (entry.filename === context.lastReading) {
+			copyReading(reading, entry);
+			return true;
+		}
+	}))
+		history.push(copyReading(context.reading));
+	const text = yaml.dump(configuration);
+	writeFileSync(configFile, text);
+	process.exit(0);
+}
+
+function loadConfig() {
+	const convict = require('convict');
+	convict.addFormat({
+		name: 'historyArray',
+		validate: function (entries, historyEntrySchema) {
+			if (!Array.isArray(entries)) {
+				throw new Error('must be of type Array');
+			}
+			entries.forEach(entry => {
+				convict(historyEntrySchema.children).load(entry).validate();
+			});
+		}
+	});
+	convict.addParser({extension: ['yml', 'yaml'], parse: yaml.load});
+	const config = convict({
+		debug: {
+			doc: 'enable debug',
+			format: 'Boolean',
+			default: false,
+		},
+		renderName: {
+			doc: 'render name',
+			format: 'String',
+			default: 'han',
+			nullable: false
+		},
+		lastReading: {
+			doc: 'last reading file name',
+			format: 'String',
+			default: null,
+			nullable: false,
+		},
+		history: {
+			doc: 'reading history',
+			format: 'historyArray',
+			default: [],
+			children: {
+				filename: {
+					doc: 'reading file full path',
+					format: 'String',
+					nullable: false,
+					default: null,
+				},
+				chapter: {
+					doc: 'reading chapter index, 0 based',
+					format: 'nat',
+					default: 0
+				},
+				line: {
+					doc: 'reading line index in chapter, 0 based',
+					format: 'nat',
+					default: 0
+				},
+				position: {
+					doc: 'reading char index in line, 0 based',
+					format: 'nat',
+					default: 0
+				},
+			}
+		}
+
+	});
+	mkdirSync(configFolder, {recursive: true});
+	let configuration;
+	if (existsSync(configFile)) {
+		config.loadFile(configFile);
+		config.validate({allowed: 'strict'});
+		configuration = {}
+		if (!configuration.debug)
+			configuration.debug = config.get('debug');
+		let renderName = config.get('renderName');
+		const render = renders[renderName];
+		if (!render)
+			errorExit('No render named: ' + renderName);
+		configuration.renderName = renderName;
+		configuration.render = render;
+		configuration.lastReading = filename ? filename : config.get('lastReading');
+		configuration.history = config.get('history');
+		if (!configuration.history.some(entry => {
+			if (entry.filename === configuration.lastReading) {
+				configuration.reading = copyReading(entry);
+				return true;
+			}
+		})) configuration.reading = {
+			filename: configuration.lastReading,
+			chapter: 0,
+			line: 0,
+			position: 0,
+		}
+	} else {
+		if (!filename)
+			errorExit('No file to open.');
+		configuration = {
+			debug: options.debug,
+			renderName: 'han',
+			lastReading: filename,
+			history: [{
+				filename: filename,
+				chapter: 0,
+				line: 0,
+				position: 0,
+			}]
+		}
+		const text = yaml.dump(configuration);
+		writeFileSync(configFile, text);
+	}
+	return configuration;
+}
+
+const context = loadConfig();
 
 if (!common.some(loaders, (name, loader) => {
-	if (loader.support(filename)) {
-		loader.load(filename, bookLoaded);
+	if (loader.support(context.lastReading)) {
+		loader.load(context.lastReading, bookLoaded);
 		return true;
 	} else
 		return false;
-})) {
-	console.error('Unknown filename type: ' + filename)
-	process.exit(1);
-}
+}))
+	errorExit('Unknown filename type: ' + filename);
