@@ -27,10 +27,7 @@ function next() {
 			return;
 		reading.chapter++;
 		reading.line = reading.position = 0;
-		book.getChapter(reading.chapter, content => {
-			reading.content = content;
-			render();
-		});
+		switchChapter(reading, render);
 	} else {
 		reading.line = next.line;
 		reading.position = next.position;
@@ -50,10 +47,10 @@ function prev() {
 	if (line === 0 && position === 0) {
 		if (reading.chapter !== 0) {
 			reading.chapter--;
-			reading.book.getChapter(reading.chapter, content => {
+			switchChapter(reading, () => {
+				const content = reading.content;
 				reading.line = content.length - 1;
 				reading.position = content[reading.line].length;
-				reading.content = content;
 				doPrev();
 			});
 		}
@@ -148,6 +145,35 @@ function goEnd() {
 	prev();
 }
 
+function prevChapter() {
+	const reading = context.reading;
+	if (reading.chapter === 0)
+		return;
+	reading.chapter--;
+	reading.line = 0;
+	reading.position = 0;
+	switchChapter(reading, render);
+}
+
+function nextChapter() {
+	const reading = context.reading;
+	const book = reading.book;
+	const chapters = book.toc.length;
+	if (reading.chapter + 1 === chapters)
+		return;
+	reading.chapter++;
+	reading.line = 0;
+	reading.position = 0
+	switchChapter(reading, render);
+}
+
+function switchChapter(reading, callback) {
+	reading.book.getChapter(reading.chapter, content => {
+		reading.content = content;
+		callback();
+	});
+}
+
 function keypress(event) {
 	const special = typeof event === 'object';
 	const key = special ? event.key : event;
@@ -197,6 +223,14 @@ function keypress(event) {
 		case 'end':
 			context.reverse = null;
 			goEnd();
+			break;
+		case '^B':
+			context.reverse = null;
+			prevChapter();
+			break;
+		case '^D':
+			context.reverse = null;
+			nextChapter();
 			break;
 		case 'q':
 		case '^[':
@@ -279,8 +313,7 @@ function start() {
 	const book = reading.book;
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
-	book.getChapter(reading.chapter, function (content) {
-		context.reading.content = content;
+	switchChapter(reading, () => {
 		initRender();
 		render();
 	});
