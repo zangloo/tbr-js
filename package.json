@@ -1,5 +1,5 @@
 {
-  "name": "tbr",
+  "name": "terminal-book-reader",
   "version": "1.0.0",
   "description": "terminal book reader",
   "main": "index.ts",
@@ -11,17 +11,25 @@
     "ebook",
     "reader"
   ],
-  "author": "",
-  "license": "GPL2",
+  "author": "zang.loo",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "ansiterm": "^1.1.0",
+    "charset-detector": "^0.0.2",
     "commander": "^8.3.0",
-    "require-dir": "^1.2.0",
+    "convict": "^6.2.1",
     "epub": "^1.2.1",
     "html-to-text": "^8.1.0",
-    "charset-detector": "^0.0.2",
-    "termdraw": "^2.0.0",
-    "ansiterm": "^1.1.0",
-    "convict": "^6.2.1",
-    "js-yaml": "^4.1.0"
-  }
+    "js-yaml": "^4.1.0",
+    "require-dir": "^1.2.0",
+    "termdraw": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zangloo/tbr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zangloo/tbr/issues"
+  },
+  "homepage": "https://github.com/zangloo/tbr#readme"
 }
