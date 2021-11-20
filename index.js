@@ -183,7 +183,7 @@ function loadConfig() {
 		const absolutePath = path.resolve(filename);
 		configuration = {
 			debug: options.debug,
-			renderName: 'han',
+			renderName: 'xi',
 			lastReading: absolutePath,
 			history: [{
 				filename: absolutePath,
