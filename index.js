@@ -109,7 +109,7 @@ function loadConfig() {
 		renderName: {
 			doc: 'render name',
 			format: 'String',
-			default: 'han',
+			default: 'xi',
 			nullable: false
 		},
 		lastReading: {
@@ -206,6 +206,13 @@ function loadConfig() {
 			line: 0,
 			position: 0,
 		}
+	configuration.switchRender = function () {
+		if (this.renderName === 'xi')
+			this.renderName = 'han';
+		else
+			this.renderName = 'xi';
+		this.render = renders[this.renderName];
+	}
 	return configuration;
 }
 

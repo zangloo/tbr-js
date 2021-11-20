@@ -131,24 +131,31 @@ function prev(context) {
 function setupReverse(context) {
 	let reverse = context.reverse;
 	if (reverse === null) return;
+	const reversLine = reverse.line;
+	const reading = context.reading;
+	const next = context.next;
+	const reversStart = reverse.start;
+	const readingLine = reading.line;
+	const readingPosition = reading.position;
+	if (((reversLine === readingLine && reversStart >= readingPosition) || (reversLine > readingLine))
+		&& (!next || (reversLine === next.line && reversStart < next.position) || (reversLine < next.line)))
+		return;
+
 	const region = context.region;
 	const height = region.height();
-	const reading = context.reading;
-	const line = reverse.line;
-	const text = reading.content[line]
-	const position = reverse.start;
+	const text = reading.content[reversLine]
 	let leading = 0;
 	if (withLeading(text))
 		leading = leadingSpace;
-	let pos = 0;
+	let position = 0;
 	do {
-		if (pos + height - leading >= position)
+		if (position + height - leading >= reversStart)
 			break;
-		pos += height - leading;
+		position += height - leading;
 		leading = 0;
 	} while (true);
-	reading.line = line;
-	reading.position = pos;
+	reading.line = reversLine;
+	reading.position = position;
 }
 
 function nextLine(context) {
@@ -212,8 +219,6 @@ function prevLine(context) {
 	return true;
 }
 
-exports.draw = draw;
-exports.prev = prev
-exports.setupReverse = setupReverse
-exports.nextLine = nextLine
-exports.prevLine = prevLine
+module.exports = {
+	draw, prev, setupReverse, nextLine, prevLine
+}

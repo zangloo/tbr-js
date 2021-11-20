@@ -68,14 +68,13 @@ function found(txt, line, pos) {
 	return true;
 }
 
-function searchPrev(pattern, startPosition) {
+function searchPrev(pattern, startLine, startPosition) {
 	const reading = context.reading;
 	let lines = reading.content;
-	let line = reading.line;
-	let text = lines[line];
+	let text = lines[startLine];
 	if (startPosition > 0)
 		text = text.substr(0, startPosition);
-	let i = line;
+	let i = startLine;
 	const regExp = new RegExp(pattern, 'g');
 	do {
 		let matches = [...text.matchAll(regExp)];
@@ -90,19 +89,18 @@ function searchPrev(pattern, startPosition) {
 	return false;
 }
 
-function searchNext(pattern, startPosition) {
+function searchNext(pattern, startLine, startPosition) {
 	if (!pattern) return false;
 	const reading = context.reading;
 	let lines = reading.content;
-	let line = reading.line;
-	let text = lines[line];
+	let text = lines[startLine];
 	if (startPosition > 0)
 		text = text.substr(startPosition);
 	const regExp = new RegExp(pattern);
 	let result = regExp.exec(text);
 	if (result)
-		return found(result[0], line, startPosition + result.index)
-	else for (let i = line + 1; i < lines.length; i++) {
+		return found(result[0], startLine, startPosition + result.index)
+	else for (let i = startLine + 1; i < lines.length; i++) {
 		text = lines[i];
 		result = regExp.exec(text);
 		if (result)
@@ -121,7 +119,8 @@ function startSearch() {
 			resume();
 			if (pattern && pattern.length > 0) {
 				context.searchPattern = pattern;
-				searchNext(context.searchPattern, context.reading.position);
+				const reading = context.reading;
+				searchNext(context.searchPattern, reading.line, reading.position);
 			}
 			statusRegion.get_cursor = function () {
 				return null;
@@ -191,15 +190,15 @@ function keypress(event) {
 			startSearch();
 			break;
 		case 'n':
-			if (searchNext(context.searchPattern, context.reverse
-				? context.reverse.end
-				: context.reading.position))
+			if (searchNext(context.searchPattern,
+				context.reverse ? context.reverse.line : context.reading.line,
+				context.reverse ? context.reverse.end : context.reading.position))
 				render();
 			break;
 		case 'N':
-			if (searchPrev(context.searchPattern, context.reverse
-				? context.reverse.start
-				: context.reading.position))
+			if (searchPrev(context.searchPattern,
+				context.reverse ? context.reverse.line : context.reading.line,
+				context.reverse ? context.reverse.start : context.reading.position))
 				render();
 			break;
 		case ' ':
@@ -238,6 +237,10 @@ function keypress(event) {
 		case '^D':
 			context.reverse = null;
 			nextChapter();
+			break;
+		case '^X':
+			context.switchRender();
+			render();
 			break;
 		case 'q':
 		case '^[':
