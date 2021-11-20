@@ -16,7 +16,7 @@
   "dependencies": {
     "commander": "^8.3.0",
     "require-dir": "^1.2.0",
-    "@liprikon/epub-parser": "^2.0.25",
+    "epub": "^1.2.1",
     "html-to-text": "^8.1.0",
     "charset-detector": "^0.0.2",
     "termdraw": "^2.0.0",

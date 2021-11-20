@@ -5,31 +5,30 @@
  * Time: 下午7:40
  */
 
-const {parseEpub} = require('@liprikon/epub-parser');
+const EPub = require('epub');
 const {loadFromString: loadHtml} = require('./html');
 
 function getChapter(index, callback) {
 	const epub = this._book;
-	const sectionId = epub.structure[index].sectionId;
-	let section;
-	if (!epub.sections.some(s => {
-		if (s.id === sectionId) {
-			section = s;
-			return true;
-		}
-	})) return [{type: 'text', content: 'internal error'}];
-	loadHtml(section.htmlString, callback)
+	const chapterId = epub.toc[index].id;
+	epub.getChapter(chapterId, (error, text) => {
+		if (text === null || text === undefined)
+			callback(['']);
+		else
+			loadHtml(text, callback);
+	});
 }
 
 function load(filename, callback) {
-	parseEpub(filename).then(epub => {
+	const epub = new EPub(filename);
+	epub.on('end', () => {
 		callback({
 			_book: epub,
-			_cache: {},
-			toc: epub.structure,
+			toc: epub.toc,
 			getChapter
 		});
 	});
+	epub.parse();
 }
 
 function support(filename) {

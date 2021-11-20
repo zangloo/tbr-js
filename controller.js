@@ -51,7 +51,10 @@ function prev() {
 				const content = reading.content;
 				reading.line = content.length - 1;
 				reading.position = content[reading.line].length;
-				doPrev();
+				if (reading.line === 0 && reading.position === 0)
+					render();
+				else
+					doPrev();
 			});
 		}
 	} else
@@ -267,7 +270,7 @@ function render() {
 	const region = context.region;
 	region.clear();
 	context.render.draw(context);
-	let msg = `[${region.width()}:${region.height()}]${reading.book.toc[reading.chapter].name}(${reading.line}:${reading.position})`;
+	let msg = `[${region.width()}:${region.height()}]${reading.book.toc[reading.chapter].title}(${reading.line}:${reading.position})`;
 	if (context.debug) {
 		const next = context.next;
 		if (next)
