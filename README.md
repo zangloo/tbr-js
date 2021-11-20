@@ -12,18 +12,18 @@
 
 | Function                  | Key mappings        |
 | ------------------------- | ------------------- |
-| Next page                 | <space>,<page down> |
-| Previous page             | <page up>           |
+| Next page                 | space,page down     |
+| Previous page             | page up             |
 | Search                    | '/'                 |
 | Search Next               | 'n'                 |
 | Search backward           | 'N'                 |
-| Next line                 | <down>,<left>       |
-| Previous line             | <up>,<right>        |
-| Goto start of chapter     | <home>              |
+| Next line                 | down, left          |
+| Previous line             | up, right           |
+| Goto start of chapter     | home                |
 | Next chapter              | ^D                  |
 | Previous chapter          | ^B                  |
 | Switch view mode han<=>xi | ^X                  |
-| Quit                      | 'q',<escape>,^C     |
+| Quit                      | 'q', escape, ^C     |
 
 ## License
 
