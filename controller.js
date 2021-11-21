@@ -273,7 +273,12 @@ function render() {
 	const region = context.region;
 	region.clear();
 	context.render.draw(context);
-	let msg = `[${region.width()}:${region.height()}]${reading.book.toc[reading.chapter].title}(${reading.line}:${reading.position})`;
+	let msg;
+	if (context.debug)
+		msg = `[${region.width()}:${region.height()}]`;
+	else
+		msg = '';
+	msg += `${reading.book.toc[reading.chapter].title}(${reading.line}:${reading.position})`;
 	if (context.debug) {
 		const next = context.next;
 		if (next)
