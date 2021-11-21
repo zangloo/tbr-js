@@ -50,7 +50,7 @@ function draw(context) {
 	const lines = reading.content;
 	let position = reading.position;
 	let line = reading.line;
-	for (let x = width - 2; x >= 0; x -= 2) {
+	for (let x = width - 2; x >= 0; x -= 3) {
 		const text = lines[line];
 		const lineLength = text.length;
 		let left = lineLength - position;
@@ -89,7 +89,10 @@ function draw(context) {
 function prev(context) {
 	const region = context.region;
 	const height = region.height();
-	const width = Math.floor(region.width() / 2);
+	const width = region.width();
+	let maxLines = Math.floor(width / 3);
+	if (width % 3 === 2)
+		maxLines++;
 
 	const reading = context.reading;
 	const lines = reading.content;
@@ -99,7 +102,7 @@ function prev(context) {
 		line--;
 		position = lengthWithLeading(lines[line]);
 	}
-	for (let x = 0; x < width; x++) {
+	for (let x = 0; x < maxLines; x++) {
 		position -= height;
 		if (position <= 0) {
 			line--;
