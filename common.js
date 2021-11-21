@@ -33,8 +33,46 @@ function some(obj, callback) {
 	});
 }
 
-exports.each = each;
-exports.some = some;
-exports.withLeading = withLeading;
-exports.lengthWithLeading = lengthWithLeading;
-exports.leadingSpace = leadingSpace;
+function errorExit(msg) {
+	console.error(msg);
+	process.exit(1);
+}
+
+function pushAndSort(element, array, compare) {
+	const length = array.length;
+	if (length === 0)
+		array.push(element);
+	else
+		array.splice(locationOf(element, array, compare) + 1, 0, element);
+	return array;
+}
+
+function locationOf(element, array, compare, start, end) {
+	compare = compare || function (a, b) {
+		return b - a;
+	};
+	start = start || 0;
+	end = end || array.length;
+	const distance = end - start;
+	if (distance === 0) return start - 1;
+	const pivot = parseInt(start + distance / 2, 10);
+	const pivotValue = array[pivot];
+	const compareResult = compare(pivotValue, element);
+	if (compareResult === 0) return pivot;
+	if (distance <= 1)
+		return compareResult > 0 ? pivot - 1 : pivot;
+	if (compareResult < 0)
+		return locationOf(element, array, compare, pivot, end);
+	else
+		return locationOf(element, array, compare, start, pivot);
+}
+
+module.exports = {
+	each,
+	some,
+	withLeading,
+	lengthWithLeading,
+	leadingSpace,
+	errorExit,
+	pushAndSort,
+};

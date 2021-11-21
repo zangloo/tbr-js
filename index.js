@@ -21,35 +21,9 @@ const requireDir = require('require-dir');
 const path = require("path");
 const {mkdirSync, existsSync, writeFileSync} = require('fs');
 const yaml = require('js-yaml');
-const loaders = requireDir('./loaders');
 const renders = requireDir('./renders');
-const common = require('./common');
+const {errorExit} = require('./common');
 const Controller = require('./controller');
-
-/**
- * @param book object
- * {
- *         toc: toc string array
- *         [imageLoader]: image loader function(<toc index>, <line index of pic>)
- *         getChapter: chapter loader function(<toc index>): line array
- *                 line: {
- *                         type: text | pic
- *                         content: text | picture text
- *                 }
- *         }
- * }
- */
-function bookLoaded(book) {
-	if (options.debug)
-		console.debug('Book opened: ' + filename);
-	context.reading.book = book;
-	Controller.start(context, exitAndSave);
-}
-
-function errorExit(msg) {
-	console.error(msg);
-	process.exit(1);
-}
 
 function copyReading(src, dest) {
 	if (!dest)
@@ -58,13 +32,14 @@ function copyReading(src, dest) {
 	dest.chapter = src.chapter;
 	dest.line = src.line;
 	dest.position = src.position;
+	dest.ts = src.ts;
 	return dest;
 }
 
 const configFolder = process.env.HOME + '/.config/tbr';
 const configFile = configFolder + '/tbr.yaml';
 
-function exitAndSave() {
+function saveAndExit(exit) {
 	const history = context.history;
 	const configuration = {
 		debug: context.debug,
@@ -77,13 +52,18 @@ function exitAndSave() {
 	if (!history.some(entry => {
 		if (entry.filename === context.lastReading) {
 			copyReading(reading, entry);
+			entry.ts = new Date().getTime();
 			return true;
 		}
-	}))
-		history.push(copyReading(context.reading));
+	})) {
+		const copy = copyReading(context.reading);
+		copy.ts = new Date().getTime();
+		history.push(copy);
+	}
 	const text = yaml.dump(configuration);
 	writeFileSync(configFile, text);
-	process.exit(0);
+	if (exit)
+		process.exit(0);
 }
 
 function loadConfig() {
@@ -150,6 +130,11 @@ function loadConfig() {
 					format: 'nat',
 					default: 0
 				},
+				ts: {
+					doc: 'last opened time stamp, in long',
+					format: 'nat',
+					default: 0
+				}
 			}
 		}
 
@@ -217,12 +202,4 @@ function loadConfig() {
 }
 
 const context = loadConfig();
-
-if (!common.some(loaders, (name, loader) => {
-	if (loader.support(context.lastReading)) {
-		loader.load(context.lastReading, bookLoaded);
-		return true;
-	} else
-		return false;
-}))
-	errorExit('Unknown filename type: ' + filename);
+Controller.start(context, saveAndExit);

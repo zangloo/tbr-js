@@ -11,7 +11,9 @@ const {loadFromString: loadHtml} = require('./html');
 function getChapter(index, callback) {
 	const epub = this._book;
 	const chapterId = epub.toc[index].id;
-	epub.getChapter(chapterId, (error, text) => {
+	epub.getChapterRaw(chapterId, (error, text) => {
+		if (error)
+			callback([error.toString()]);
 		if (text === null || text === undefined)
 			callback(['']);
 		else
@@ -22,11 +24,14 @@ function getChapter(index, callback) {
 function load(filename, callback) {
 	const epub = new EPub(filename);
 	epub.on('end', () => {
-		callback({
+		callback(null, {
 			_book: epub,
 			toc: epub.toc,
 			getChapter
 		});
+	});
+	epub.on('error', function (error) {
+		callback(error.toString());
 	});
 	epub.parse();
 }

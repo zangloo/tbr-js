@@ -16,7 +16,7 @@ function load(filename, callback) {
 		encoding = 'UTF-8';
 	const text = buffer.toString(encoding);
 	const lines = loadFromString(text);
-	callback({
+	callback(null, {
 		toc: [{title: filename}],
 		getChapter: function (index, callback) {
 			callback(lines);

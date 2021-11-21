@@ -5,9 +5,19 @@
  * Time: 上午7:24
  */
 
+const {readFileSync} = require('fs');
 const {convert} = require('html-to-text');
 
 function load(filename, callback) {
+	const content = readFileSync(filename);
+	loadFromString(content, lines => {
+		callback(null, {
+			toc: [{title: filename}],
+			getChapter: function (index, callback) {
+				callback(lines);
+			}
+		});
+	});
 }
 
 function loadFromString(string, callback) {

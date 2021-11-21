@@ -6,16 +6,19 @@
  */
 
 const {Draw, Region, controls} = require('termdraw');
+const requireDir = require('require-dir');
 const readline = require('readline');
+const loaders = requireDir('./loaders');
+const {some, errorExit} = require('./common');
 const searchPrefix = 'Search: ';
-let exitAndSave;
+let saveAndExit;
 let context;
 let statusRegion;
 let layout;
 
 function exit() {
 	context.draw.close();
-	exitAndSave();
+	saveAndExit(true);
 }
 
 function next() {
@@ -321,9 +324,19 @@ function resize() {
 	render();
 }
 
-function start() {
-	const reading = context.reading;
-	const book = reading.book;
+/**
+ * @param book object
+ * {
+ *         toc: toc array {title: <string>}
+ *         [imageLoader]: image loader function(<toc index>, <line index of pic>)
+ *         getChapter: chapter loader function(<toc index>): content array
+ *                 content: string
+ *         }
+ * }
+ * @param reading opened file reading info
+ */
+function bookLoaded(book, reading) {
+	context.reading.book = book;
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
 	switchChapter(reading, () => {
@@ -332,8 +345,22 @@ function start() {
 	});
 }
 
-exports.start = function (c, exitAndSaveCallback) {
+function start(reading) {
+	if (!some(loaders, (name, loader) => {
+		if (loader.support(reading.filename)) {
+			loader.load(reading.filename, function (error, book) {
+				if (error)
+					errorExit(error);
+				bookLoaded(book, reading)
+			});
+			return true;
+		} else
+			return false;
+	})) errorExit('Unknown filename type: ' + reading.filename);
+}
+
+exports.start = function (c, saveAndExitCallback) {
 	context = c;
-	exitAndSave = exitAndSaveCallback;
-	start();
+	saveAndExit = saveAndExitCallback;
+	start(context.reading);
 };
