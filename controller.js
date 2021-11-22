@@ -227,12 +227,17 @@ function keypress(event) {
 					dispatchEnd();
 					loaders.txt.load(filename, function (error, book) {
 						if (error)
-							return reportError(error);
+							return printStatus(error);
 						delete context.reading.book;
 						bookLoaded(book, context.reading);
 					});
 				});
 			}
+			break;
+		case 'v':
+			const npmVersion = process.env.npm_package_version;
+			const version = npmVersion ? npmVersion : 'develop';
+			printStatus(`Version: ${version}`);
 			break;
 		case 'h':
 			historySelect();
@@ -408,7 +413,7 @@ function bookLoaded(book, reading) {
 	});
 }
 
-function reportError(msg) {
+function printStatus(msg) {
 	if (statusRegion) {
 		statusRegion.clear();
 		statusRegion.str(0, 0, msg, {reverse: true});
@@ -419,18 +424,18 @@ function reportError(msg) {
 
 function start(reading) {
 	if (!existsSync(reading.filename))
-		return reportError('File not exists: ' + reading.filename)
+		return printStatus('File not exists: ' + reading.filename)
 	if (!some(loaders, (name, loader) => {
 		if (loader.support(reading.filename)) {
 			loader.load(reading.filename, function (error, book) {
 				if (error)
-					return reportError(error);
+					return printStatus(error);
 				bookLoaded(book, reading)
 			});
 			return true;
 		} else
 			return false;
-	})) return reportError('Unknown filename type: ' + reading.filename);
+	})) return printStatus('Unknown filename type: ' + reading.filename);
 }
 
 exports.start = function (c, saveAndExitCallback) {
