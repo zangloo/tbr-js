@@ -4,10 +4,13 @@
  * Date: 2021/11/18
  * Time: 下午3:50
  */
+'use strict';
 
 const {Draw, Region, controls} = require('termdraw');
+const {existsSync} = require('fs');
 const requireDir = require('require-dir');
 const readline = require('readline');
+const history = require('./history');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
 const searchPrefix = 'Search: ';
@@ -120,7 +123,7 @@ function startSearch() {
 	statusRegion.clear();
 	render();
 	draw.pause(statusRegion, function (resume) {
-		function stopReadonly(pattern) {
+		function stopReadline(pattern) {
 			rl.close();
 			resume();
 			if (pattern && pattern.length > 0) {
@@ -135,9 +138,9 @@ function startSearch() {
 		}
 
 		const rl = readline.createInterface({input: process.stdin, output: process.stdout});
-		rl.question(searchPrefix, stopReadonly);
+		rl.question(searchPrefix, stopReadline);
 		rl.on('SIGINT', () => {
-			stopReadonly();
+			stopReadline();
 			exit();
 		});
 	})
@@ -186,11 +189,37 @@ function switchChapter(reading, callback) {
 	});
 }
 
+function dispatchEnd() {
+	dispatcher = null;
+	if (!resizedWhenDispatch)
+		return;
+	resizedWhenDispatch = false;
+	resize(true);
+}
+
+function historySelect() {
+	history.start(context, function (reading) {
+		dispatchEnd();
+		if (reading && reading.filename !== context.reading.filename)
+			start(reading);
+		else
+			context.draw.redraw(layout, true);
+	});
+	dispatcher = history;
+}
+
+let dispatcher;
+
 function keypress(event) {
 	const special = typeof event === 'object';
 	const key = special ? event.key : event;
+	if (dispatcher) {
+		dispatcher.keypress(key);
+		return;
+	}
 	switch (key) {
 		case 'h':
+			historySelect();
 			break;
 		case '/':
 			startSearch();
@@ -314,7 +343,14 @@ function initRender() {
 	});
 }
 
-function resize() {
+let resizedWhenDispatch = false;
+
+function resize(noRender) {
+	if (dispatcher) {
+		resizedWhenDispatch = true;
+		dispatcher.resize();
+		return;
+	}
 	const draw = context.draw;
 	const width = draw.width();
 	const height = draw.height();
@@ -326,7 +362,8 @@ function resize() {
 		child: statusRegion,
 		fixed: 1,
 	}]);
-	render();
+	if (noRender !== true)
+		render();
 }
 
 /**
@@ -341,27 +378,45 @@ function resize() {
  * @param reading opened file reading info
  */
 function bookLoaded(book, reading) {
+	const origBook = context.reading.book;
+	if (origBook) {
+		saveAndExit(false);
+		context.lastReading = reading.filename;
+		context.reading = reading;
+	}
 	context.reading.book = book;
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
 	switchChapter(reading, () => {
-		initRender();
+		if (!origBook)
+			initRender();
 		render();
 	});
 }
 
 function start(reading) {
+	function reportError(msg) {
+		if (statusRegion) {
+			statusRegion.clear();
+			statusRegion.str(0, 0, msg, {reverse: true});
+			context.draw.redraw(layout, true);
+		} else
+			errorExit(msg);
+	}
+
+	if (!existsSync(reading.filename))
+		return reportError('File not exists: ' + reading.filename)
 	if (!some(loaders, (name, loader) => {
 		if (loader.support(reading.filename)) {
 			loader.load(reading.filename, function (error, book) {
 				if (error)
-					errorExit(error);
+					return reportError(error);
 				bookLoaded(book, reading)
 			});
 			return true;
 		} else
 			return false;
-	})) errorExit('Unknown filename type: ' + reading.filename);
+	})) return reportError('Unknown filename type: ' + reading.filename);
 }
 
 exports.start = function (c, saveAndExitCallback) {

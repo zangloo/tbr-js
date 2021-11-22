@@ -5,6 +5,7 @@
  * Date: 2021/11/17
  * Time: 下午6:18
  */
+'use strict';
 
 const {program} = require('commander');
 let filename = null;
@@ -52,6 +53,8 @@ function saveAndExit(exit) {
 	if (!history.some(entry => {
 		if (entry.filename === context.lastReading) {
 			copyReading(reading, entry);
+			delete reading.book;
+			delete reading.content
 			entry.ts = new Date().getTime();
 			return true;
 		}

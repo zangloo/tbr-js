@@ -17,6 +17,7 @@
 | Search                    | '/'                 |
 | Search Next               | 'n'                 |
 | Search backward           | 'N'                 |
+| History dialog            | 'h'                 |
 | Next line                 | down, left          |
 | Previous line             | up, right           |
 | Goto start of chapter     | home                |
