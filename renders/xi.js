@@ -21,7 +21,7 @@ function draw(context) {
 	for (let y = 0; y < height; y++) {
 		const text = lines[line];
 		const lineLength = text.length;
-		let x = (position === 0 && withLeading(text)) ? leadingSpace : 0;
+		let x = (position === 0 && reading.book.leadingSpace === true && withLeading(text)) ? leadingSpace : 0;
 		while (position < lineLength) {
 			const char = text[position];
 			const cw = wcswidth(char);

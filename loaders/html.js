@@ -42,7 +42,7 @@ function loadFromString(string, callback) {
 }
 
 function support(filename) {
-	return filename.indexOf('.html') > 0 || filename.indexOf('.hml') > 0;
+	return filename.endsWith('.html') || filename.endsWith('.hml');
 }
 
 exports.load = load;

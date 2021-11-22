@@ -13,6 +13,7 @@ function load(filename, callback) {
 	const encoding = detectCharset(buffer);
 	const text = buffer.toString(encoding);
 	const lines = loadFromString(text);
+	const leadingSpace = !filename.endsWith('.log');
 	callback(null, {
 		toc: [{title: filename}],
 		getChapter(index, callback) {
@@ -20,6 +21,9 @@ function load(filename, callback) {
 		},
 		get encoding() {
 			return encoding;
+		},
+		get leadingSpace() {
+			return leadingSpace;
 		}
 	});
 }
@@ -29,7 +33,7 @@ function loadFromString(text) {
 }
 
 function support(filename) {
-	return filename.indexOf('.txt') > 0 || filename.indexOf('.log') > 0;
+	return filename.endsWith('.txt') || filename.endsWith('.log');
 }
 
 function detectCharset(buffer) {

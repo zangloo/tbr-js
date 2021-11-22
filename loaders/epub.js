@@ -37,7 +37,7 @@ function load(filename, callback) {
 }
 
 function support(filename) {
-	return filename.indexOf('.epub') > 0;
+	return filename.endsWith('.epub');
 }
 
 exports.load = load;
