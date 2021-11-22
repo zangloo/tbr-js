@@ -11,6 +11,7 @@ const {existsSync} = require('fs');
 const requireDir = require('require-dir');
 const readline = require('readline');
 const history = require('./history');
+const follow = require('./follow');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
 const searchPrefix = 'Search: ';
@@ -218,6 +219,21 @@ function keypress(event) {
 		return;
 	}
 	switch (key) {
+		case 'f':
+			const filename = context.lastReading;
+			if (loaders.txt.support(filename)) {
+				dispatcher = follow;
+				follow.start(context.reading, context.draw, function () {
+					dispatchEnd();
+					loaders.txt.load(filename, function (error, book) {
+						if (error)
+							return reportError(error);
+						delete context.reading.book;
+						bookLoaded(book, context.reading);
+					});
+				});
+			}
+			break;
 		case 'h':
 			historySelect();
 			break;
@@ -388,22 +404,20 @@ function bookLoaded(book, reading) {
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
 	switchChapter(reading, () => {
-		if (!origBook)
-			initRender();
 		render();
 	});
 }
 
-function start(reading) {
-	function reportError(msg) {
-		if (statusRegion) {
-			statusRegion.clear();
-			statusRegion.str(0, 0, msg, {reverse: true});
-			context.draw.redraw(layout, true);
-		} else
-			errorExit(msg);
-	}
+function reportError(msg) {
+	if (statusRegion) {
+		statusRegion.clear();
+		statusRegion.str(0, 0, msg, {reverse: true});
+		context.draw.redraw(layout, true);
+	} else
+		errorExit(msg);
+}
 
+function start(reading) {
 	if (!existsSync(reading.filename))
 		return reportError('File not exists: ' + reading.filename)
 	if (!some(loaders, (name, loader) => {
@@ -422,5 +436,6 @@ function start(reading) {
 exports.start = function (c, saveAndExitCallback) {
 	context = c;
 	saveAndExit = saveAndExitCallback;
+	initRender();
 	start(context.reading);
 };
