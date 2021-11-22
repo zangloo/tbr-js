@@ -225,6 +225,7 @@ function keypress(event) {
 				dispatcher = follow;
 				follow.start(context.reading, context.draw, function () {
 					dispatchEnd();
+					printStatus('Loading...');
 					loaders.txt.load(filename, function (error, book) {
 						if (error)
 							return printStatus(error);
@@ -427,6 +428,7 @@ function start(reading) {
 		return printStatus('File not exists: ' + reading.filename)
 	if (!some(loaders, (name, loader) => {
 		if (loader.support(reading.filename)) {
+			printStatus('Loading...');
 			loader.load(reading.filename, function (error, book) {
 				if (error)
 					return printStatus(error);
