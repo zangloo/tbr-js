@@ -10,7 +10,8 @@ const {Draw, Region, controls} = require('termdraw');
 const {existsSync} = require('fs');
 const requireDir = require('require-dir');
 const readline = require('readline');
-const history = require('./history');
+const History = require('./history');
+const Chapter = require('./chapter');
 const follow = require('./follow');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
@@ -199,14 +200,29 @@ function dispatchEnd() {
 }
 
 function historySelect() {
-	history.start(context, function (reading) {
+	dispatcher = new History(context, function (reading) {
 		dispatchEnd();
 		if (reading && reading.filename !== context.reading.filename)
 			start(reading);
 		else
 			context.draw.redraw(layout, true);
 	});
-	dispatcher = history;
+}
+
+function chapterSelect() {
+	const reading = context.reading;
+	if (reading.book.toc.length === 1)
+		return;
+	dispatcher = new Chapter(context, function (topic, index) {
+		dispatchEnd();
+		if (topic) {
+			reading.chapter = index;
+			reading.line = 0;
+			reading.position = 0;
+			switchChapter(reading, render);
+		} else
+			context.draw.redraw(layout, true);
+	});
 }
 
 let dispatcher;
@@ -242,6 +258,9 @@ function keypress(event) {
 			break;
 		case 'h':
 			historySelect();
+			break;
+		case 'c':
+			chapterSelect();
 			break;
 		case '/':
 			startSearch();
@@ -332,8 +351,7 @@ function render() {
 			msg += `=>(${next.line}:${next.position})`;
 		else
 			msg += '->()';
-	}
-	else
+	} else
 		msg = `${reading.book.toc[reading.chapter].title}(${reading.content.length}:${reading.line})`;
 	statusRegion.clear();
 	statusRegion.str(0, 0, msg);
