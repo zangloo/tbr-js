@@ -7,11 +7,20 @@
 
 const {readFileSync} = require('fs');
 const detect = require('charset-detector');
+const iconv = require('iconv-lite');
 
-function load(filename, callback) {
+function load(reading, callback) {
+	const filename = reading.filename;
 	const buffer = readFileSync(filename);
-	const encoding = detectCharset(buffer);
-	const text = buffer.toString(encoding);
+	let encoding;
+	if (reading.cache && reading.cache.encoding)
+		encoding = reading.cache.encoding;
+	else {
+		const charsets = detect(buffer);
+		encoding = charsets[0].charsetName;
+		reading.cache = {encoding: encoding};
+	}
+	const text = iconv.decode(buffer, encoding);
 	const lines = loadFromString(text);
 	const leadingSpace = !filename.endsWith('.log');
 	callback(null, {
@@ -36,14 +45,6 @@ function support(filename) {
 	return filename.endsWith('.txt') || filename.endsWith('.log');
 }
 
-function detectCharset(buffer) {
-	const charsets = detect(buffer);
-	let encoding = charsets[0].charsetName;
-	if (encoding === 'ISO-8859-1')
-		encoding = 'UTF-8';
-	return encoding;
-}
-
 module.exports = {
-	load, support, loadFromString, detectCharset
+	load, support, loadFromString
 };

@@ -21,7 +21,8 @@ function getChapter(index, callback) {
 	});
 }
 
-function load(filename, callback) {
+function load(reading, callback) {
+	const filename = reading.filename;
 	const epub = new EPub(filename);
 	epub.on('end', () => {
 		callback(null, {

@@ -1,6 +1,6 @@
 {
   "name": "terminal-book-reader",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "terminal book reader",
   "main": "index.ts",
   "scripts": {
@@ -16,6 +16,7 @@
   "dependencies": {
     "ansiterm": "^1.1.0",
     "charset-detector": "^0.0.2",
+    "iconv-lite": "^0.6.3",
     "commander": "^8.3.0",
     "convict": "^6.2.1",
     "epub": "^1.2.1",

@@ -33,6 +33,8 @@ function copyReading(src, dest) {
 	dest.chapter = src.chapter;
 	dest.line = src.line;
 	dest.position = src.position;
+	if (src.cache)
+		dest.cache = src.cache;
 	dest.ts = src.ts;
 	return dest;
 }
@@ -137,6 +139,9 @@ function loadConfig() {
 					doc: 'last opened time stamp, in long',
 					format: 'nat',
 					default: 0
+				},
+				cache:{
+					doc: 'cache for book'
 				}
 			}
 		}

@@ -226,7 +226,7 @@ function keypress(event) {
 				follow.start(context.reading, context.draw, function () {
 					dispatchEnd();
 					printStatus('Loading...');
-					loaders.txt.load(filename, function (error, book) {
+					loaders.txt.load(context.reading, function (error, book) {
 						if (error)
 							return printStatus(error);
 						delete context.reading.book;
@@ -429,7 +429,7 @@ function start(reading) {
 	if (!some(loaders, (name, loader) => {
 		if (loader.support(reading.filename)) {
 			printStatus('Loading...');
-			loader.load(reading.filename, function (error, book) {
+			loader.load(reading, function (error, book) {
 				if (error)
 					return printStatus(error);
 				bookLoaded(book, reading)

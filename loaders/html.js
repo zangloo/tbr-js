@@ -8,7 +8,8 @@
 const {readFileSync} = require('fs');
 const {convert} = require('html-to-text');
 
-function load(filename, callback) {
+function load(reading, callback) {
+	const filename = reading.filename;
 	const content = readFileSync(filename);
 	loadFromString(content, lines => {
 		callback(null, {
