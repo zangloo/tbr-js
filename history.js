@@ -26,10 +26,10 @@ class History extends List {
 				return ts2 - ts1;
 			});
 		});
-		super(context, callback, {entries: historyEntries});
+		super(context, historyEntries, 'Reopen file from history', callback);
 	}
 
-	title(entry) {
+	entryText(entry) {
 		return entry.filename;
 	}
 }

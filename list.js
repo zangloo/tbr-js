@@ -9,23 +9,22 @@
 const {controls} = require('termdraw')
 const {wcswidth} = require('ansiterm')
 
-/**
- *
- * @param c context
- * @param callback if selected, called with a argument: <reading info from history list>
- */
 class List {
 	#context;
 	#box;
 	#entries;
+	#title;
 	#closeCallback;
 	#currentSelection;
 	#topIndex;
 
-	constructor(context, closeCallback, opts) {
+	constructor(context, entries, title, closeCallback, opts) {
+		if (!opts)
+			opts = {};
 		this.#context = context;
 		this.#closeCallback = closeCallback;
-		this.#entries = opts.entries;
+		this.#entries = entries;
+		this.#title = title;
 		this.#currentSelection = (opts.selectedIndex === undefined ? 0 : opts.selectedIndex);
 		this.#topIndex = 0;
 
@@ -35,7 +34,6 @@ class List {
 		this.#box = new controls.Box({
 			width: width,
 			height: height,
-			title: this.#makeTitle(),
 		});
 		this.#refresh(draw, height - 2);
 	}
@@ -115,7 +113,7 @@ class List {
 			const entryIndex = i + this.#topIndex;
 			const entry = this.#entries[entryIndex];
 			const y = i + 1;
-			let text = this.title(entry)
+			let text = this.entryText(entry)
 			while (wcswidth(text) > width)
 				text = text.substr(1);
 			this.#box.str(1, y, text, entryIndex === this.#currentSelection ? {reverse: true} : null);
@@ -124,7 +122,7 @@ class List {
 	}
 
 	#makeTitle() {
-		return `select file from history: (${this.#entries.length}:${this.#currentSelection + 1})`;
+		return `${this.#title}: (${this.#entries.length}:${this.#currentSelection + 1})`;
 	}
 }
 

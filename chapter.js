@@ -15,13 +15,12 @@ class Chapter extends List {
 		reading.book.toc.forEach(topic => {
 			entries.push(topic);
 		})
-		super(context, closeCallback, {
-			entries,
+		super(context, entries, 'Select chapter', closeCallback, {
 			selectedIndex: reading.chapter,
 		});
 	}
 
-	title(topic) {
+	entryText(topic) {
 		return topic.title;
 	}
 }
