@@ -42,7 +42,12 @@ function loadFromString(text) {
 }
 
 function support(filename) {
-	return filename.endsWith('.txt') || filename.endsWith('.log');
+	return filename.endsWith('.txt')
+		|| filename.endsWith('.log')
+		|| filename.endsWith('.json')
+		|| filename.endsWith('.yaml')
+		|| filename.endsWith('.yml')
+		|| filename.endsWith('.js');
 }
 
 module.exports = {

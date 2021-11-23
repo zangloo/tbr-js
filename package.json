@@ -1,6 +1,6 @@
 {
   "name": "terminal-book-reader",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "terminal book reader",
   "main": "index.ts",
   "scripts": {

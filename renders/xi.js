@@ -8,6 +8,74 @@
 
 const {leadingSpace, withLeading} = require('../common');
 const {wcswidth} = require('ansiterm');
+const tabSize = 4;
+
+function wrapLine(text, line, position, width, withLeadingSpace, reverse) {
+	const lineLength = text.length;
+	let breakPosition = 0;
+	let lineChars = [];
+	let x;
+	if (withLeadingSpace === true)
+		withLeadingSpace = position === 0 && withLeading(text);
+	if (withLeadingSpace) {
+		x = leadingSpace;
+		for (let i = 0; i < x; i++)
+			lineChars.push({char: ' ', width: 1});
+	} else
+		x = 0;
+	// [position, [{char, format},...], position, [{char, format},...], ...]
+	const wrappedInfo = [position];
+	while (position < lineLength) {
+		const char = text[position];
+		const cw = wcswidth(char);
+		const canBreak = char === ' ' || char === '\t';
+		if (x + cw > width) {
+			x = 0;
+			if (cw > 1 || canBreak || breakPosition === 0) {
+				wrappedInfo.push(lineChars);
+				lineChars = [];
+				if (canBreak) {
+					wrappedInfo.push(++position);
+					continue;
+				}
+				wrappedInfo.push(position);
+			} else {
+				const prevPosition = wrappedInfo[wrappedInfo.length - 1];
+				let charsCount;
+				if (prevPosition === 0) {
+					charsCount = breakPosition
+					if (withLeadingSpace)
+						charsCount += leadingSpace;
+				} else
+					charsCount = breakPosition - prevPosition;
+				wrappedInfo.push(lineChars.slice(0, charsCount));
+				lineChars = lineChars.slice(charsCount, lineChars.length);
+				wrappedInfo.push(breakPosition);
+				breakPosition = 0;
+				lineChars.forEach(char => {
+					x += char.width;
+				});
+			}
+		}
+		let format = null;
+		if (reverse && reverse.line === line && reverse.start <= position && reverse.end > position)
+			format = {reverse: true};
+		position++;
+		x += cw;
+		if (canBreak) {
+			breakPosition = position;
+			lineChars.push({char: ' ', format: format, width: 1});
+			if (char === '\t') {
+				const tabCharsLeft = tabSize - (x % tabSize) - 1;
+				for (let c = 0; x < width && c < tabCharsLeft; c++, x++)
+					lineChars.push({char: ' ', format: format, width: 1});
+			}
+		} else
+			lineChars.push({char: char, format: format, width: cw});
+	}
+	wrappedInfo.push(lineChars);
+	return wrappedInfo;
+}
 
 function draw(context) {
 	const region = context.region;
@@ -17,37 +85,35 @@ function draw(context) {
 	const reading = context.reading;
 	const lines = reading.content;
 	let position = reading.position;
+	const reverse = context.reverse;
+	let y = 0;
 	let line = reading.line;
-	for (let y = 0; y < height; y++) {
-		const text = lines[line];
-		const lineLength = text.length;
-		let x = (position === 0 && reading.book.leadingSpace === true && withLeading(text)) ? leadingSpace : 0;
-		while (position < lineLength) {
-			const char = text[position];
-			const cw = wcswidth(char);
-			if (x + cw >= width)
-				break;
-			const reverse = context.reverse;
-			let format = null;
-			if (reverse && reverse.line === line && reverse.start <= position && reverse.end > position)
-				format = {reverse: true};
-			region.chr(x, y, char, format);
-			x += cw;
-			position++;
-		}
-		if (position === lineLength) {
-			line++;
-			if (line === lines.length) {
-				context.next = null;
+	for (; line < lines.length; line++) {
+		const wrappedInfo = wrapLine(lines[line], line, position, width, reading.book.leadingSpace, reverse);
+		position = 0;
+		for (let l = 0; l < wrappedInfo.length; l += 2) {
+			const chars = wrappedInfo[l + 1];
+			let x = 0;
+			chars.forEach(char => {
+				region.chr(x, y, char.char, char.format);
+				x += char.width;
+			});
+			y++;
+			if (y === height) {
+				if (l === wrappedInfo.length - 2) {
+					line++;
+					position = 0;
+				} else
+					position = wrappedInfo[l + 2];
+				context.next = {
+					line: line,
+					position: position,
+				}
 				return;
-			} else
-				position = 0;
+			}
 		}
 	}
-	context.next = {
-		line: line,
-		position: position
-	}
+	context.next = null;
 }
 
 function prev(context) {
@@ -66,33 +132,18 @@ function prev(context) {
 	} else
 		text = lines[line].substr(0, position);
 	let rows = 0;
-	let linePositions;
+	let wrappedInfo;
 	do {
-		linePositions = [0]
-		const lineLength = text.length;
-		let w = withLeading(text) ? leadingSpace : 0;
-		for (let cp = 0; cp < lineLength; cp++) {
-			const char = text[cp];
-			const cw = wcswidth(char);
-			w += cw;
-			if (w > width) {
-				linePositions.push(cp);
-				w = cw;
-			}
-		}
-		rows += linePositions.length;
+		wrappedInfo = wrapLine(text, line, 0, width, reading.book.leadingSpace, null);
+		rows += wrappedInfo.length / 2;
 		if (rows >= height)
 			break;
 		if (line === 0)
 			break;
 		line--;
 		text = lines[line];
-	} while (true)
-
-	if (rows >= height)
-		position = linePositions[rows - height];
-	else
-		position = 0;
+	} while (true);
+	position = wrappedInfo[(rows - height) * 2];
 
 	reading.line = line;
 	reading.position = position;
@@ -113,22 +164,14 @@ function setupReverse(context) {
 
 	const region = context.region;
 	const width = region.width();
-	const text = reading.content[reversLine]
-	let w = withLeading(text) ? leadingSpace : 0;
-	let position = 0;
-	let cp = 0;
-	do {
-		const char = text[cp];
-		const cw = wcswidth(char);
-		w += cw;
-		if (w > width) {
-			w = cw;
-			position = cp;
+	const text = reading.content[reversLine];
+	const wrappedInfo = wrapLine(text, reversLine, 0, width, reading.book.leadingSpace, null);
+	for (let i = wrappedInfo.length - 2; i >= 0; i -= 2)
+		if (wrappedInfo[i] <= reversStart) {
+			reading.line = reversLine;
+			reading.position = wrappedInfo[i];
+			return;
 		}
-		cp++;
-	} while (cp <= reversStart);
-	reading.line = reversLine;
-	reading.position = position;
 }
 
 function nextLine(context) {
@@ -139,16 +182,18 @@ function nextLine(context) {
 	const text = reading.content[line];
 	const textLength = text.length;
 	let position = reading.position;
-	let w = withLeading(text) ? leadingSpace : 0;
-	for (; position < textLength; position++) {
-		const char = text[position];
-		const cw = wcswidth(char);
-		w += cw;
-		if (w > width) break;
-	}
-	if (position === textLength)
+	const wrappedInfo = wrapLine(text, line, 0, width, reading.book.leadingSpace, null);
+	let i = 0;
+	for (; i < wrappedInfo.length; i += 2)
+		if (wrappedInfo[i] > position) {
+			position = wrappedInfo[i];
+			break;
+		}
+
+	if (i === wrappedInfo.length) {
 		reading.line++;
-	else
+		reading.position = 0;
+	} else
 		reading.position = position;
 	return true;
 }
@@ -167,20 +212,17 @@ function prevLine(context) {
 		position = text.length;
 	} else
 		text = reading.content[line];
-
-	let lastBreak = 0;
-	let w = withLeading(text) ? leadingSpace : 0;
-	for (let cp = 0; cp < position; cp++) {
-		const char = text[cp];
-		const cw = wcswidth(char);
-		w += cw;
-		if (w > width) {
-			lastBreak = cp;
-			w = cw;
+	const wrappedInfo = wrapLine(text, line, 0, width, reading.book.leadingSpace, null);
+	let i = wrappedInfo.length - 2;
+	for (; i > 0; i -= 2)
+		if (wrappedInfo[i] < position) {
+			position = wrappedInfo[i];
+			break;
 		}
-	}
+	if (i === 0)
+		position = 0;
 	reading.line = line;
-	reading.position = lastBreak;
+	reading.position = position;
 	return true;
 }
 
