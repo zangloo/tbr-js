@@ -45,7 +45,6 @@ const configFile = configFolder + '/tbr.yaml';
 function saveAndExit(exit) {
 	const history = context.history;
 	const configuration = {
-		debug: context.debug,
 		renderName: context.renderName,
 		lastReading: context.lastReading,
 		searchPattern: context.searchPattern,
@@ -86,11 +85,6 @@ function loadConfig() {
 	});
 	convict.addParser({extension: ['yml', 'yaml'], parse: yaml.load});
 	const config = convict({
-		debug: {
-			doc: 'enable debug',
-			format: 'Boolean',
-			default: false,
-		},
 		renderName: {
 			doc: 'render name',
 			format: 'String',
@@ -152,11 +146,7 @@ function loadConfig() {
 	if (existsSync(configFile)) {
 		config.loadFile(configFile);
 		config.validate({allowed: 'strict'});
-		configuration = {}
-		if (options.debug)
-			configuration.debug = true;
-		else
-			configuration.debug = config.get('debug');
+		configuration = {debug: options.debug};
 		configuration.renderName = config.get('renderName');
 		configuration.searchPattern = config.get('searchPattern');
 		if (!filename)
