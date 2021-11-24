@@ -102,6 +102,10 @@ function draw(context) {
 			if (y === height) {
 				if (l === wrappedInfo.length - 2) {
 					line++;
+					if (line >= lines.length){
+						context.next = null;
+						return;
+					}
 					position = 0;
 				} else
 					position = wrappedInfo[l + 2];
@@ -143,7 +147,10 @@ function prev(context) {
 		line--;
 		text = lines[line];
 	} while (true);
-	position = wrappedInfo[(rows - height) * 2];
+	if (rows < height)// break by line === 0
+		position = 0;
+	else
+		position = wrappedInfo[(rows - height) * 2];
 
 	reading.line = line;
 	reading.position = position;
@@ -180,9 +187,8 @@ function nextLine(context) {
 	let line = reading.line;
 	const width = context.region.width();
 	const text = reading.content[line];
-	const textLength = text.length;
 	let position = reading.position;
-	const wrappedInfo = wrapLine(text, line, 0, width, reading.book.leadingSpace, null);
+	const wrappedInfo = wrapLine(text, line, position, width, reading.book.leadingSpace, null);
 	let i = 0;
 	for (; i < wrappedInfo.length; i += 2)
 		if (wrappedInfo[i] > position) {
