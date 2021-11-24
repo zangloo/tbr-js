@@ -15,6 +15,7 @@ const Chapter = require('./chapter');
 const follow = require('./follow');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
+const consoleTitle = require('console-title');
 const searchPrefix = 'Search: ';
 let saveAndExit;
 let context;
@@ -23,6 +24,7 @@ let layout;
 
 function exit() {
 	context.draw.close();
+	consoleTitle('');
 	saveAndExit(true);
 }
 
@@ -437,6 +439,7 @@ function bookLoaded(book, reading) {
 	const origBook = context.reading.book;
 	if (origBook)
 		saveAndExit(false);
+	consoleTitle(reading.filename);
 	context.lastReading = reading.filename;
 	context.reading = reading;
 	context.reading.book = book;
