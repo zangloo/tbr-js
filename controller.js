@@ -184,6 +184,14 @@ function nextChapter() {
 	switchChapter(reading, render);
 }
 
+function reloadBook() {
+	const reading = context.reading;
+	delete reading.book;
+	delete reading.cache;
+	delete reading.content;
+	start(reading);
+}
+
 function switchChapter(reading, callback) {
 	reading.book.getChapter(reading.chapter, content => {
 		reading.content = content;
@@ -313,6 +321,10 @@ function keypress(event) {
 		case '^D':
 			context.reverse = null;
 			nextChapter();
+			break;
+		case '^R':
+			context.reverse = null;
+			reloadBook();
 			break;
 		case '^X':
 			context.switchRender();
