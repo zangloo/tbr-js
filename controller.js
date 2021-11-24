@@ -344,15 +344,21 @@ function render() {
 	region.clear();
 	context.render.draw(context);
 	let msg;
+	let title = reading.book.toc[reading.chapter].title;
+	if (!title)
+		if (typeof reading.book.tocTitle === 'function')
+			title = reading.book.tocTitle(reading.chapter);
+		else
+			title = 'No name';
 	if (context.debug) {
-		msg = `[${region.width()}:${region.height()}]${reading.book.toc[reading.chapter].title}(${reading.line}:${reading.position})`;
+		msg = `[${region.width()}:${region.height()}]${title}(${reading.line}:${reading.position})`;
 		const next = context.next;
 		if (next)
 			msg += `=>(${next.line}:${next.position})`;
 		else
 			msg += '->()';
 	} else
-		msg = `${reading.book.toc[reading.chapter].title}(${reading.content.length}:${reading.line})`;
+		msg = `${title}(${reading.content.length}:${reading.line})`;
 	statusRegion.clear();
 	statusRegion.str(0, 0, msg);
 	context.draw.redraw(layout, true);
