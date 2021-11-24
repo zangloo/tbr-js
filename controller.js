@@ -417,11 +417,10 @@ function resize(noRender) {
  */
 function bookLoaded(book, reading) {
 	const origBook = context.reading.book;
-	if (origBook) {
+	if (origBook)
 		saveAndExit(false);
-		context.lastReading = reading.filename;
-		context.reading = reading;
-	}
+	context.lastReading = reading.filename;
+	context.reading = reading;
 	context.reading.book = book;
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
@@ -447,7 +446,12 @@ function start(reading) {
 			printStatus('Loading...');
 			loader.load(reading, function (error, book) {
 				if (error)
-					return printStatus(error);
+					if (context.reading.book)
+						return printStatus(error);
+					else {// start up loading failed
+						context.draw.close();
+						errorExit(error);
+					}
 				bookLoaded(book, reading)
 			});
 			return true;
