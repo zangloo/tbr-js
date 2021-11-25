@@ -27,7 +27,7 @@
 | Next line                 | down, left          |
 | Previous line             | up, right           |
 | Goto start of chapter     | home                |
-| Goto end of chapteri      | end                 |
+| Goto end of chapter       | end                 |
 | Next chapter              | ^D                  |
 | Previous chapter          | ^B                  |
 | Switch view mode han<=>xi | ^X                  |
