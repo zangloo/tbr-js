@@ -15,7 +15,7 @@ const List = require('./list')
  * @param callback if selected, called with a argument: <reading info from history list>
  */
 class History extends List {
-	constructor(context, callback) {
+	constructor(context, term, callback, options) {
 		const historyEntries = [];
 		const lastReading = context.lastReading;
 		context.history.forEach(entry => {
@@ -26,7 +26,8 @@ class History extends List {
 				return ts2 - ts1;
 			});
 		});
-		super(context, historyEntries, 'Reopen file from history', callback);
+		super(term, historyEntries, 'Reopen file from history', callback, options);
+		this.redraw();
 	}
 
 	entryText(entry) {

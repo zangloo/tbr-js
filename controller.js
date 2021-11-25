@@ -6,25 +6,34 @@
  */
 'use strict';
 
-const {Draw, Region, controls} = require('termdraw');
+const tk = require('terminal-kit');
+const Region = require('./region');
 const {existsSync} = require('fs');
 const requireDir = require('require-dir');
 const readline = require('readline');
 const History = require('./history');
 const Chapter = require('./chapter');
-const follow = require('./follow');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
 const consoleTitle = require('console-title');
 const searchPrefix = 'Search: ';
+
 let saveAndExit;
 let context;
+
+let term;
 let statusRegion;
-let layout;
+
+function cleanUp() {
+	term.grabInput(false);
+	term.hideCursor(false);
+	term.styleReset();
+	term.clear();
+	consoleTitle('');
+}
 
 function exit() {
-	context.draw.close();
-	consoleTitle('');
+	cleanUp();
 	saveAndExit(true);
 }
 
@@ -123,31 +132,27 @@ function searchNext(pattern, startLine, startPosition) {
 }
 
 function startSearch() {
-	const draw = context.draw;
-	statusRegion.clear();
-	render();
-	draw.pause(statusRegion, function (resume) {
-		function stopReadline(pattern) {
-			rl.close();
-			resume();
-			if (pattern && pattern.length > 0) {
-				context.searchPattern = pattern;
-				const reading = context.reading;
-				searchNext(context.searchPattern, reading.line, reading.position);
-			}
-			statusRegion.get_cursor = function () {
-				return null;
-			};
-			render();
+	function stopReadline(pattern) {
+		rl.close();
+		if (pattern && pattern.length > 0) {
+			context.searchPattern = pattern;
+			const reading = context.reading;
+			searchNext(context.searchPattern, reading.line, reading.position);
 		}
+		term.grabInput(true);
+		term.hideCursor(true);
+		render();
+	}
 
-		const rl = readline.createInterface({input: process.stdin, output: process.stdout});
-		rl.question(searchPrefix, stopReadline);
-		rl.on('SIGINT', () => {
-			stopReadline();
-			exit();
-		});
-	})
+	term.moveTo(1, term.height);
+	term.grabInput(false);
+	term.hideCursor(false);
+	const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+	rl.question(searchPrefix, stopReadline);
+	rl.on('SIGINT', () => {
+		stopReadline();
+		exit();
+	});
 }
 
 function goHome() {
@@ -210,20 +215,20 @@ function dispatchEnd() {
 }
 
 function historySelect() {
-	dispatcher = new History(context, function (reading) {
+	dispatcher = new History(context, term, function (reading) {
 		dispatchEnd();
 		if (reading && reading.filename !== context.reading.filename)
 			start(reading);
 		else
-			context.draw.redraw(layout, true);
-	});
+			redraw();
+	}, {theme: statusRegion.theme});
 }
 
 function chapterSelect() {
 	const reading = context.reading;
 	if (reading.book.toc.length === 1)
 		return;
-	dispatcher = new Chapter(context, function (topic, index) {
+	dispatcher = new Chapter(context, term, function (topic, index) {
 		dispatchEnd();
 		if (topic) {
 			reading.chapter = index;
@@ -231,8 +236,13 @@ function chapterSelect() {
 			reading.position = 0;
 			switchChapter(reading, render);
 		} else
-			context.draw.redraw(layout, true);
-	});
+			redraw();
+	}, {theme: statusRegion.theme});
+}
+
+function redraw() {
+	context.region.redraw();
+	statusRegion.redraw();
 }
 
 let dispatcher;
@@ -245,22 +255,6 @@ function keypress(event) {
 		return;
 	}
 	switch (key) {
-		case 'f':
-			const filename = context.lastReading;
-			if (loaders.txt.support(filename)) {
-				dispatcher = follow;
-				follow.start(context.reading, context.draw, function () {
-					dispatchEnd();
-					printStatus('Loading...');
-					loaders.txt.load(context.reading, function (error, book) {
-						if (error)
-							return printStatus(error);
-						delete context.reading.book;
-						bookLoaded(book, context.reading);
-					});
-				});
-			}
-			break;
 		case 'v':
 			const npmVersion = process.env.npm_package_version;
 			const version = npmVersion ? npmVersion : 'develop';
@@ -288,58 +282,56 @@ function keypress(event) {
 				render();
 			break;
 		case ' ':
-		case 'next':
+		case 'PAGE_DOWN':
 			context.reverse = null;
 			next();
 			break;
-		case 'prior':
+		case 'PAGE_UP':
 			context.reverse = null;
 			prev();
 			break;
-		case 'up':
-		case 'right':
+		case 'UP':
+		case 'RIGHT':
 			context.reverse = null;
 			if (context.render.prevLine(context))
 				render();
 			break;
-		case 'down':
-		case 'left':
+		case 'DOWN':
+		case 'LEFT':
 			context.reverse = null;
 			if (context.render.nextLine(context))
 				render();
 			break;
-		case 'home':
+		case 'HOME':
 			context.reverse = null;
 			goHome();
 			break;
-		case 'end':
+		case 'END':
 			context.reverse = null;
 			goEnd();
 			break;
-		case '^B':
+		case 'CTRL_B':
 			context.reverse = null;
 			prevChapter();
 			break;
-		case '^D':
+		case 'CTRL_D':
 			context.reverse = null;
 			nextChapter();
 			break;
-		case '^R':
+		case 'CTRL_R':
 			context.reverse = null;
 			reloadBook();
 			break;
-		case '^X':
+		case 'CTRL_X':
 			context.switchRender();
 			render();
 			break;
 		case 'q':
-		case '^[':
-		case '^C':
+		case 'ESCAPE':
+		case 'CTRL_C':
 			exit();
 			break;
 		default:
-		// context.region.str(0, 0, key);
-		// context.draw.redraw(context.region, true);
 	}
 }
 
@@ -373,53 +365,43 @@ function render() {
 			msg += '->()';
 	} else
 		msg = `${title}(${reading.content.length}:${reading.line})`;
-	statusRegion.clear();
-	statusRegion.str(0, 0, msg);
-	context.draw.redraw(layout, true);
+	context.region.redraw();
+	printStatus(msg, true);
 }
 
 function initRender() {
-	const draw = context.draw = new Draw();
-	draw.on('keypress', keypress)
-	draw.on('control', keypress)
-	draw.on('special', keypress)
-	draw.on('resize', resize)
-	const width = draw.width();
-	const height = draw.height();
-	context.region = new Region({width: width, height: height - 1});
-	statusRegion = new Region({width: width, height: 1});
-	layout = new controls.HLayout({
-		width: width,
-		height: height,
-		children: [{
-			child: context.region,
-			fixed: height - 1,
-		}, {
-			child: statusRegion,
-			fixed: 1,
-		}],
-	});
+	let currentTheme = null;
+	context.themes.forEach(theme => {
+		if (theme.name === context.themeName)
+			currentTheme = theme;
+	})
+	if (!currentTheme)
+		errorExit(`Theme ${context.themeName} not defined.`);
+	term = tk.terminal;
+	term.clear();
+	term.grabInput();
+	term.hideCursor(true);
+	term.on('key', keypress)
+	term.on('resize', resize)
+	const width = term.width;
+	const height = term.height;
+	context.region = new Region(term, 0, 0, width, height - 1, currentTheme);
+	statusRegion = new Region(term, 0, height - 1, width, 1, currentTheme);
 }
 
 let resizedWhenDispatch = false;
 
 function resize(noRender) {
+	const width = term.width;
+	const height = term.height;
 	if (dispatcher) {
 		resizedWhenDispatch = true;
-		dispatcher.resize();
+		dispatcher.resize(width, height);
 		return;
 	}
-	const draw = context.draw;
-	const width = draw.width();
-	const height = draw.height();
-	layout.resize(width, height);
-	layout.set_children([{
-		child: context.region,
-		fixed: height - 1,
-	}, {
-		child: statusRegion,
-		fixed: 1,
-	}]);
+	context.region.resize(width, height - 1);
+	statusRegion.y = height - 1;
+	statusRegion.resize(width, 1);
 	if (noRender !== true)
 		render();
 }
@@ -450,35 +432,37 @@ function bookLoaded(book, reading) {
 	});
 }
 
-function printStatus(msg) {
-	if (statusRegion) {
-		statusRegion.clear();
-		statusRegion.str(0, 0, msg, {reverse: true});
-		context.draw.redraw(layout, true);
-	} else
-		errorExit(msg);
+function printStatus(msg, noReverse) {
+	statusRegion.clear();
+	statusRegion.str(0, 0, msg, {reverse: !noReverse});
+	statusRegion.redraw();
 }
 
 function start(reading) {
+	function reportError(msg) {
+		if (context.reading.book) {
+			context.region.redraw();
+			return printStatus(msg);
+		} else {
+			cleanUp();
+			errorExit(msg);
+		}
+	}
+
 	if (!existsSync(reading.filename))
-		return printStatus('File not exists: ' + reading.filename)
+		reportError('File not exists: ' + reading.filename);
 	if (!some(loaders, (name, loader) => {
 		if (loader.support(reading.filename)) {
 			printStatus('Loading...');
 			loader.load(reading, function (error, book) {
 				if (error)
-					if (context.reading.book)
-						return printStatus(error);
-					else {// start up loading failed
-						context.draw.close();
-						errorExit(error);
-					}
+					return reportError(error);
 				bookLoaded(book, reading)
 			});
 			return true;
 		} else
 			return false;
-	})) return printStatus('Unknown filename type: ' + reading.filename);
+	})) return reportError('Unknown filename type: ' + reading.filename);
 }
 
 exports.start = function (c, saveAndExitCallback) {

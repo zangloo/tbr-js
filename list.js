@@ -6,109 +6,103 @@
  */
 'use strict';
 
-const {controls} = require('termdraw')
 const {wcswidth} = require('ansiterm')
+const Region = require('./region')
+const {spChars} = require('terminal-kit')
 
-class List {
-	#context;
-	#box;
+class List extends Region {
+	#boxChars
+
 	#entries;
 	#title;
 	#closeCallback;
 	#currentSelection;
 	#topIndex;
 
-	constructor(context, entries, title, closeCallback, opts) {
+	constructor(term, entries, title, closeCallback, opts) {
 		if (!opts)
 			opts = {};
-		this.#context = context;
+		super(term, opts.x, opts.y, opts.width, opts.height, opts.theme);
+		if (!opts)
+			opts = {};
+		this.#boxChars = spChars.box.double;
 		this.#closeCallback = closeCallback;
 		this.#entries = entries;
 		this.#title = title;
 		this.#currentSelection = (opts.selectedIndex === undefined ? 0 : opts.selectedIndex);
 		this.#topIndex = 0;
 
-		const draw = context.draw;
-		const width = draw.width();
-		const height = draw.height();
-		this.#box = new controls.Box({
-			width: width,
-			height: height,
-		});
-		this.#refresh(draw, height - 2);
+		this.#refresh(this.height() - 2);
 	}
 
 	keypress(key) {
-		const draw = this.#context.draw;
-		const maxLines = draw.height() - 2;
+		const maxLines = this.height() - 2;
 		switch (key) {
-			case 'down':
+			case 'DOWN':
 				if (this.#currentSelection === this.#entries.length - 1)
 					break;
 				this.#currentSelection++;
-				this.#refresh(draw, maxLines);
+				this.#refresh(maxLines);
 				break;
-			case 'up':
+			case 'UP':
 				if (this.#currentSelection === 0)
 					break;
 				this.#currentSelection--;
-				this.#refresh(draw, maxLines);
+				this.#refresh(maxLines);
 				break;
-			case 'next':
+			case 'PAGE_DOWN':
 				if (this.#currentSelection === this.#entries.length - 1)
 					break;
 				this.#currentSelection += maxLines;
 				if (this.#currentSelection >= this.#entries.length)
 					this.#currentSelection = this.#entries.length - 1;
-				this.#refresh(draw, maxLines)
+				this.#refresh(maxLines)
 				break;
-			case 'prior':
+			case 'PAGE_UP':
 				if (this.#currentSelection === 0)
 					break;
 				this.#currentSelection -= maxLines;
 				if (this.#currentSelection < 0)
 					this.#currentSelection = 0;
-				this.#refresh(draw, maxLines);
+				this.#refresh(maxLines);
 				break;
-			case 'end':
+			case 'END':
 				this.#currentSelection = this.#entries.length - 1;
-				this.#refresh(draw, maxLines);
+				this.#refresh(maxLines);
 				break;
-			case 'home':
+			case 'HOME':
 				this.#currentSelection = this.#topIndex = 0;
-				this.#refresh(draw, maxLines);
+				this.#refresh(maxLines);
 				break;
-			case '^M':
+			case 'ENTER':
 				// return key
 				this.#closeCallback(this.#entries[this.#currentSelection], this.#currentSelection);
 				this.#closeCallback = null;
 				break;
 			case 'q':
-			case '^[':
-			case '^C':
+			case 'ESCAPE':
+			case 'CTRL_C':
 				this.#closeCallback(null);
 				this.#closeCallback = null;
 				break;
 		}
 	}
 
-	resize() {
-		const draw = this.#context.draw;
-		const height = draw.height();
-		this.#box.resize(draw.width(), height);
-		this.#refresh(draw, height - 2);
+	resize(width, height) {
+		super.resize(width, height);
+		this.#refresh(height - 2);
 	}
 
-	#refresh(draw, resetTopLines) {
+	#refresh(resetTopLines) {
 		if (resetTopLines && (this.#currentSelection < this.#topIndex || this.#currentSelection >= this.#topIndex + resetTopLines)) {
 			this.#topIndex = 0;
 			while (this.#topIndex + resetTopLines <= this.#currentSelection)
 				this.#topIndex += resetTopLines;
 		}
-		// set title will call _redo that clear the box and draw the border
-		this.#box.set_title(this.#makeTitle());
-		const width = draw.width() - 2;
-		let lines = Math.min(this.#entries.length - this.#topIndex, this.#box.height() - 2);
+		this.clear();
+		this.#preDrawSelf();
+		const width = this.width() - 2;
+		let lines = Math.min(this.#entries.length - this.#topIndex, this.height() - 2);
 		for (let i = 0; i < lines; i++) {
 			const entryIndex = i + this.#topIndex;
 			const entry = this.#entries[entryIndex];
@@ -116,9 +110,36 @@ class List {
 			let text = this.entryText(entry)
 			while (wcswidth(text) > width)
 				text = text.substr(1);
-			this.#box.str(1, y, text, entryIndex === this.#currentSelection ? {reverse: true} : null);
+			this.str(1, y, text, entryIndex === this.#currentSelection ? {reverse: true} : null);
 		}
-		draw.redraw(this.#box, true);
+		this.redraw();
+	}
+
+	#preDrawSelf = function () {
+		const titleText = this.#makeTitle();
+		const width = this.width();
+		const height = this.height();
+		// Draw the top border
+		const boxChars = this.#boxChars;
+		let x = this.chr(0, 0, boxChars.topLeft, this.theme);
+		x = this.str(x, 0, '[ ', this.theme);
+		x = this.str(x, 0, titleText, this.theme);
+		x = this.str(x, 0, ' ]');
+		for (; x < width - 1; x++)
+			this.chr(x, 0, boxChars.horizontal, this.theme);
+		this.chr(width - 1, 0, boxChars.topRight, this.theme);
+
+		// Draw the bottom border
+		this.chr(0, height - 1, boxChars.bottomLeft, this.theme);
+		for (let x = 1; x < width - 1; x++)
+			this.chr(x, height - 1, boxChars.horizontal, this.theme);
+		this.chr(width - 1, height - 1, boxChars.bottomRight, this.theme);
+
+		// Draw the left and right border
+		for (let y = 1; y < height - 1; y++) {
+			this.chr(0, y, boxChars.vertical);
+			this.chr(width - 1, y, boxChars.vertical);
+		}
 	}
 
 	#makeTitle() {

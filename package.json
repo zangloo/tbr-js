@@ -1,6 +1,6 @@
 {
   "name": "terminal-book-reader",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "terminal book reader",
   "main": "index.ts",
   "scripts": {
@@ -23,8 +23,7 @@
     "html-to-text": "^8.1.0",
     "js-yaml": "^4.1.0",
     "require-dir": "^1.2.0",
-    "termdraw": "^2.0.0",
-    "tail": "^2.2.4",
+    "terminal-kit": "^2.2.3",
     "console-title": "^1.1.0"
   },
   "repository": {

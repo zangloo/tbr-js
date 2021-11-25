@@ -9,15 +9,14 @@
 const List = require('./list')
 
 class Chapter extends List {
-	constructor(context, closeCallback) {
+	constructor(context, term, closeCallback, options) {
 		const entries = [];
 		const reading = context.reading;
 		reading.book.toc.forEach(topic => {
 			entries.push(topic);
 		})
-		super(context, entries, 'Select chapter', closeCallback, {
-			selectedIndex: reading.chapter,
-		});
+		options.selectedIndex = reading.chapter;
+		super(term, entries, 'Select chapter', closeCallback, options);
 	}
 
 	entryText(topic) {

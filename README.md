@@ -18,7 +18,6 @@
 | Search Next               | 'n'                 |
 | Search backward           | 'N'                 |
 | History dialog            | 'h'                 |
-| Follow log, like tail -f  | 'f'                 |
 | Select chapter            | 'c'                 |
 | Show version              | 'v'                 |
 | Next line                 | down, left          |
