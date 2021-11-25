@@ -9,7 +9,8 @@
     npm install terminal-book-reader
 
 ## Configuration
-    Config files store in .config/tbr/tbr.yaml. Themes configuration store in .config/tbr/themes.yaml. Files will auto generated if not exists.
+
+Config files store in .config/tbr/tbr.yaml. Themes configuration store in .config/tbr/themes.yaml. Files will auto generated if not exists.
 
 ## Key binding
 
