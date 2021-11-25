@@ -81,7 +81,8 @@ function prev() {
 		doPrev();
 }
 
-function found(txt, line, pos) {
+function found(result, line, pos) {
+	const txt = result[0];
 	context.reverse = {
 		line: line,
 		start: pos,
@@ -91,19 +92,18 @@ function found(txt, line, pos) {
 	return true;
 }
 
-function searchPrev(pattern, startLine, startPosition) {
+function searchPrev(regExp, startLine, startPosition) {
 	const reading = context.reading;
 	let lines = reading.content;
 	let text = lines[startLine];
 	if (startPosition > 0)
 		text = text.substr(0, startPosition);
 	let i = startLine;
-	const regExp = new RegExp(pattern, 'g');
 	do {
 		let matches = [...text.matchAll(regExp)];
 		if (matches.length > 0) {
 			const result = matches[matches.length - 1];
-			return found(result[0], i, result.index)
+			return found(result, i, result.index)
 		}
 		if (i === 0) break;
 		i--;
@@ -112,22 +112,20 @@ function searchPrev(pattern, startLine, startPosition) {
 	return false;
 }
 
-function searchNext(pattern, startLine, startPosition) {
-	if (!pattern) return false;
+function searchNext(regExp, startLine, startPosition, found) {
 	const reading = context.reading;
 	let lines = reading.content;
 	let text = lines[startLine];
 	if (startPosition > 0)
 		text = text.substr(startPosition);
-	const regExp = new RegExp(pattern);
 	let result = regExp.exec(text);
 	if (result)
-		return found(result[0], startLine, startPosition + result.index)
+		return found(result, startLine, startPosition + result.index)
 	else for (let i = startLine + 1; i < lines.length; i++) {
 		text = lines[i];
 		result = regExp.exec(text);
 		if (result)
-			return found(result[0], i, result.index);
+			return found(result, i, result.index);
 	}
 	return false;
 }
@@ -135,14 +133,19 @@ function searchNext(pattern, startLine, startPosition) {
 function startSearch() {
 	function stopReadline(pattern) {
 		rl.close();
-		if (pattern && pattern.length > 0) {
-			context.searchPattern = pattern;
-			const reading = context.reading;
-			searchNext(context.searchPattern, reading.line, reading.position);
-		}
 		term.grabInput(true);
 		term.hideCursor(true);
-		render();
+		if (pattern && pattern.length > 0) {
+			try {
+				const regExp = new RegExp(pattern);
+				context.searchPattern = pattern;
+				const reading = context.reading;
+				searchNext(regExp, reading.line, reading.position, found);
+				render();
+			} catch (e) {
+				reportError(e.toString());
+			}
+		}
 	}
 
 	term.moveTo(1, term.height);
@@ -288,13 +291,14 @@ function keypress(event) {
 			startSearch();
 			break;
 		case 'n':
-			if (searchNext(context.searchPattern,
+			if (searchNext(new RegExp(context.searchPattern),
 				context.reverse ? context.reverse.line : context.reading.line,
-				context.reverse ? context.reverse.end : context.reading.position))
+				context.reverse ? context.reverse.end : context.reading.position,
+				found))
 				render();
 			break;
 		case 'N':
-			if (searchPrev(context.searchPattern,
+			if (searchPrev(new RegExp(context.searchPattern, 'g'),
 				context.reverse ? context.reverse.line : context.reading.line,
 				context.reverse ? context.reverse.start : context.reading.position))
 				render();
@@ -456,17 +460,17 @@ function printStatus(msg, noReverse) {
 	statusRegion.redraw();
 }
 
-function start(reading) {
-	function reportError(msg) {
-		if (context.reading.book) {
-			context.region.redraw();
-			return printStatus(msg);
-		} else {
-			cleanUp();
-			errorExit(msg);
-		}
+function reportError(msg) {
+	if (context.reading.book) {
+		context.region.redraw();
+		return printStatus(msg);
+	} else {
+		cleanUp();
+		errorExit(msg);
 	}
+}
 
+function start(reading) {
 	if (!existsSync(reading.filename))
 		reportError('File not exists: ' + reading.filename);
 	if (!some(loaders, (name, loader) => {
