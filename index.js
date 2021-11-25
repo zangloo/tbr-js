@@ -237,11 +237,8 @@ function loadConfig() {
 			themes.loadFile(themeConfigFile);
 			themes.validate({allowed: 'strict'});
 			configuration.themes = themes.get('themes');
-		} else
-			configuration.themes = defaultThemes;
-		configuration.themeName = config.get('themeName');
-		if (configuration.themeName === null)
-			configuration.themeName = configuration.themes[0].name;
+			configuration.themeName = config.get('themeName');
+		}
 	} else {
 		if (!filename)
 			errorExit('No file to open.');
@@ -256,11 +253,16 @@ function loadConfig() {
 				line: 0,
 				position: 0,
 			}],
-			themes: defaultThemes,
-			themeName: themes[0].name,
 		}
 		const text = yaml.dump(configuration);
 		writeFileSync(configFile, text);
+	}
+	if (!configuration.themes) {
+		configuration.themes = defaultThemes;
+		if (configuration.themeName === null)
+			configuration.themeName = configuration.themes[0].name;
+		const text = yaml.dump({themes: configuration.themes});
+		writeFileSync(themeConfigFile, text);
 	}
 	const render = renders[configuration.renderName];
 	if (!render)
