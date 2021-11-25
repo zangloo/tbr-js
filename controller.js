@@ -250,8 +250,8 @@ function themeSelect() {
 			context.themeName = topic.name;
 			context.region.theme = topic;
 			statusRegion.theme = topic;
-			redraw();
 		}
+		redraw();
 	}, {theme: statusRegion.theme});
 }
 

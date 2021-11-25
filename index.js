@@ -73,6 +73,7 @@ function copyReading(src, dest) {
 
 const configFolder = process.env.HOME + '/.config/tbr';
 const configFile = configFolder + '/tbr.yaml';
+const themeConfigFile = configFolder + '/themes.yaml';
 
 function saveAndExit(exit) {
 	const history = context.history;
@@ -81,7 +82,6 @@ function saveAndExit(exit) {
 		lastReading: context.lastReading,
 		searchPattern: context.searchPattern,
 		history: history,
-		themes: context.themes,
 		themeName: context.themeName,
 	}
 	const reading = context.reading;
@@ -105,116 +105,91 @@ function saveAndExit(exit) {
 }
 
 function loadConfig() {
-	const convict = require('convict');
-	convict.addFormat({
-		name: 'array',
-		validate: function (entries, entrySchema) {
-			if (!Array.isArray(entries))
-				throw new Error(`must be of ${entrySchema.children.doc} Array`);
-			entries.forEach(entry => {
-				convict(entrySchema.children).load(entry).validate();
-			});
-		}
-	});
-	convict.addFormat({
-		name: 'fontColor',
-		validate: function (name) {
-			if (colors.indexOf(name) < 0)
-				throw new Error(`must be one of ${colors}`);
-		}
-	});
-	convict.addParser({extension: ['yml', 'yaml'], parse: yaml.load});
-	const config = convict({
-		renderName: {
-			doc: 'render name',
-			format: 'String',
-			default: 'xi',
-			nullable: false
-		},
-		lastReading: {
-			doc: 'last reading file name',
-			format: 'String',
-			default: null,
-			nullable: false,
-		},
-		searchPattern: {
-			doc: 'the last search pattern',
-			format: 'String',
-			default: null,
-			nullable: true,
-		},
-		themeName: {
-			doc: 'theme name using',
-			format: 'String',
-			default: defaultThemes[0].name,
-			nullable: false
-		},
-		themes: {
-			doc: 'themes',
-			format: 'array',
-			default: defaultThemes,
-			children: {
-				name: {
-					doc: 'theme name',
-					format: 'String',
-					nullable: false,
-					default: null,
-				},
-				color: {
-					doc: 'text color',
-					format: 'fontColor',
-					nullable: true,
-					default: null,
-				},
-				background: {
-					doc: 'text background color',
-					format: 'fontColor',
-					nullable: true,
-					default: null,
-				}
-			}
-		},
-		history: {
-			doc: 'reading history',
-			format: 'array',
-			default: [],
-			children: {
-				filename: {
-					doc: 'reading file full path',
-					format: 'String',
-					nullable: false,
-					default: null,
-				},
-				chapter: {
-					doc: 'reading chapter index, 0 based',
-					format: 'nat',
-					default: 0
-				},
-				line: {
-					doc: 'reading line index in chapter, 0 based',
-					format: 'nat',
-					default: 0
-				},
-				position: {
-					doc: 'reading char index in line, 0 based',
-					format: 'nat',
-					default: 0
-				},
-				ts: {
-					doc: 'last opened time stamp, in long',
-					format: 'nat',
-					default: 0
-				},
-				cache: {
-					doc: 'cache for book'
-				}
-			}
-		}
-
-	});
 	mkdirSync(configFolder, {recursive: true});
 	let configuration;
 	if (existsSync(configFile)) {
+		const convict = require('convict');
+		convict.addFormat({
+			name: 'array',
+			validate: function (entries, entrySchema) {
+				if (!Array.isArray(entries))
+					throw new Error(`must be of ${entrySchema.children.doc} Array`);
+				entries.forEach(entry => {
+					convict(entrySchema.children).load(entry).validate();
+				});
+			}
+		});
+		convict.addFormat({
+			name: 'fontColor',
+			validate: function (name) {
+				if (colors.indexOf(name) < 0)
+					throw new Error(`must be one of ${colors}`);
+			}
+		});
+		convict.addParser({extension: ['yml', 'yaml'], parse: yaml.load});
+		const config = convict({
+			renderName: {
+				doc: 'render name',
+				format: 'String',
+				default: 'xi',
+				nullable: false
+			},
+			lastReading: {
+				doc: 'last reading file name',
+				format: 'String',
+				default: null,
+				nullable: false,
+			},
+			searchPattern: {
+				doc: 'the last search pattern',
+				format: 'String',
+				default: null,
+				nullable: true,
+			},
+			themeName: {
+				doc: 'theme name using',
+				format: 'String',
+				default: null,
+				nullable: true,
+			},
+			history: {
+				doc: 'reading history',
+				format: 'array',
+				default: [],
+				children: {
+					filename: {
+						doc: 'reading file full path',
+						format: 'String',
+						nullable: false,
+						default: null,
+					},
+					chapter: {
+						doc: 'reading chapter index, 0 based',
+						format: 'nat',
+						default: 0
+					},
+					line: {
+						doc: 'reading line index in chapter, 0 based',
+						format: 'nat',
+						default: 0
+					},
+					position: {
+						doc: 'reading char index in line, 0 based',
+						format: 'nat',
+						default: 0
+					},
+					ts: {
+						doc: 'last opened time stamp, in long',
+						format: 'nat',
+						default: 0
+					},
+					cache: {
+						doc: 'cache for book'
+					}
+				}
+			}
+
+		});
 		config.loadFile(configFile);
 		config.validate({allowed: 'strict'});
 		configuration = {debug: options.debug};
@@ -231,8 +206,42 @@ function loadConfig() {
 				return true;
 			}
 		});
-		configuration.themes = config.get('themes');
+		if (existsSync(themeConfigFile)) {
+			const themes = convict({
+				themes: {
+					doc: 'themes',
+					format: 'array',
+					default: defaultThemes,
+					children: {
+						name: {
+							doc: 'theme name',
+							format: 'String',
+							nullable: false,
+							default: null,
+						},
+						color: {
+							doc: 'text color',
+							format: 'fontColor',
+							nullable: true,
+							default: null,
+						},
+						background: {
+							doc: 'text background color',
+							format: 'fontColor',
+							nullable: true,
+							default: null,
+						}
+					}
+				},
+			});
+			themes.loadFile(themeConfigFile);
+			themes.validate({allowed: 'strict'});
+			configuration.themes = themes.get('themes');
+		} else
+			configuration.themes = defaultThemes;
 		configuration.themeName = config.get('themeName');
+		if (configuration.themeName === null)
+			configuration.themeName = configuration.themes[0].name;
 	} else {
 		if (!filename)
 			errorExit('No file to open.');
@@ -248,7 +257,7 @@ function loadConfig() {
 				position: 0,
 			}],
 			themes: defaultThemes,
-			themeName: defaultThemes[0].name,
+			themeName: themes[0].name,
 		}
 		const text = yaml.dump(configuration);
 		writeFileSync(configFile, text);
