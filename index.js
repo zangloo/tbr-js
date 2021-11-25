@@ -45,8 +45,16 @@ const colors = [
 	'brightYellow',
 ];
 const defaultThemes = [{
+	name: 'default',
+	color: null,
+	background: null,
+}, {
 	name: 'white on black',
-	color: 'white',
+	color: 'brightWhite',
+	background: 'black',
+}, {
+	name: 'green on black',
+	color: 'green',
 	background: 'black',
 }];
 
@@ -155,13 +163,13 @@ function loadConfig() {
 				color: {
 					doc: 'text color',
 					format: 'fontColor',
-					nullable: false,
+					nullable: true,
 					default: null,
 				},
 				background: {
 					doc: 'text background color',
 					format: 'fontColor',
-					nullable: false,
+					nullable: true,
 					default: null,
 				}
 			}

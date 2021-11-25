@@ -10,9 +10,9 @@ const {Palette} = require('terminal-kit')
 
 class Region {
 	term
+	theme
 
 	#computed
-	theme
 	#width
 	#height
 	#buffer
@@ -20,13 +20,11 @@ class Region {
 
 	constructor(term, x, y, width, height, theme) {
 		this.term = term;
+		this.theme = theme;
 		this.#palette = new Palette();
 		this.#computed = {x: x === undefined ? 1 : x + 1, y: y === undefined ? 1 : y + 1,};
-		this.theme = theme;
-		this.theme = theme;
 		this.#width = width || term.width;
 		this.#height = height || term.height;
-		this.theme = theme;
 		this.#initBuffer();
 	}
 
@@ -80,19 +78,24 @@ class Region {
 	redraw() {
 		const xShift = this.#computed.x;
 		const yShift = this.#computed.y;
-		const colorIndex = this.theme ? this.#palette.colorNameToIndex(this.theme.color) : -1;
-		const backgroundIndex = this.theme ? this.#palette.colorNameToIndex(this.theme.background) : -1;
-		let themePrefix = '';
-		let reversPrefix = '';
-		if (this.theme) {
+		const colorIndex = (this.theme && this.theme.color) ? this.#palette.colorNameToIndex(this.theme.color) : -1;
+		const backgroundIndex = (this.theme && this.theme.background) ? this.#palette.colorNameToIndex(this.theme.background) : -1;
+		let themePrefix;
+		let reversPrefix;
+		let str;
+		if (colorIndex >= 0) {
 			themePrefix = this.#palette.escape[colorIndex];
 			themePrefix += this.#palette.bgEscape[backgroundIndex];
 			reversPrefix = this.#palette.escape[backgroundIndex];
 			reversPrefix += this.#palette.bgEscape[colorIndex];
+			str = themePrefix;
+		} else {
+			themePrefix = ''
+			reversPrefix = '\u001b[7m';
+			str = '\u001b[0m';
 		}
 		let reversing = false;
 		for (let y = 0; y < this.#height; y++) {
-			let str = '';
 			this.term.moveTo(xShift, y + yShift);
 			for (let x = 0; x < this.#width; x++) {
 				const char = this.#buffer[y][x];
@@ -102,14 +105,21 @@ class Region {
 					str += reversPrefix;
 				} else if (reversing) {
 					reversing = false;
-					str += themePrefix;
+					if (colorIndex >= 0)
+						str += themePrefix;
+					else
+						str += '\u001b[0m';
 				}
 				str += char.char;
 			}
 			this.term.raw(str);
+			str = '';
 		}
 		if (reversing)
-			this.term.raw(themePrefix);
+			if (colorIndex >= 0)
+				this.term.raw(themePrefix);
+			else
+				this.term.raw('\u001b[0m');
 	}
 
 	str(x, y, string, format) {

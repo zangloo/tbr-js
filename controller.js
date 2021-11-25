@@ -13,6 +13,7 @@ const requireDir = require('require-dir');
 const readline = require('readline');
 const History = require('./history');
 const Chapter = require('./chapter');
+const Theme = require('./theme');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
 const consoleTitle = require('console-title');
@@ -240,6 +241,20 @@ function chapterSelect() {
 	}, {theme: statusRegion.theme});
 }
 
+function themeSelect() {
+	if (context.themes.length === 1)
+		return;
+	dispatcher = new Theme(context, term, function (topic) {
+		dispatchEnd();
+		if (topic) {
+			context.themeName = topic.name;
+			context.region.theme = topic;
+			statusRegion.theme = topic;
+			redraw();
+		}
+	}, {theme: statusRegion.theme});
+}
+
 function redraw() {
 	context.region.redraw();
 	statusRegion.redraw();
@@ -265,6 +280,9 @@ function keypress(event) {
 			break;
 		case 'c':
 			chapterSelect();
+			break;
+		case 't':
+			themeSelect();
 			break;
 		case '/':
 			startSearch();
