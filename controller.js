@@ -17,7 +17,6 @@ const Theme = require('./theme');
 const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
 const consoleTitle = require('console-title');
-const searchPrefix = 'Search: ';
 const traceSize = 100;
 
 let saveAndExit;
@@ -131,36 +130,61 @@ function searchNext(regExp, startLine, startPosition, found) {
 	return false;
 }
 
-function startSearch() {
-	function stopReadline(pattern) {
+function readlineFunction(prefix, callback, readlineOption) {
+	function stopReadline(str) {
 		rl.close();
 		term.grabInput(true);
 		term.hideCursor(true);
-		if (pattern && pattern.length > 0) {
-			try {
-				const regExp = new RegExp(pattern);
-				context.searchPattern = pattern;
-				const reading = context.reading;
-				searchNext(regExp, reading.line, reading.position, found);
-				render();
-			} catch (e) {
-				reportError(e.toString());
-			}
-		} else
+		if (str && str.length > 0)
+			callback(str);
+		else
 			redraw();
 	}
 
 	term.moveTo(1, term.height);
 	term.grabInput(false);
 	term.hideCursor(false);
-	const rl = readline.createInterface({
-		input: process.stdin, output: process.stdout,
-		history: context.searchHistory, historySize: context.searchHistorySize
-	});
-	rl.question(searchPrefix, stopReadline);
+	if (!readlineOption)
+		readlineOption = {};
+	readlineOption.input = process.stdin;
+	readlineOption.output = process.stdout;
+	const rl = readline.createInterface(readlineOption);
+	rl.question(prefix, stopReadline);
 	rl.on('SIGINT', () => {
 		stopReadline();
 		exit();
+	});
+
+}
+
+function goto() {
+	readlineFunction("Goto: ", str => {
+		const line = parseInt(str);
+		if (Number.isNaN(line) || line < 0 || line >= context.reading.content.length)
+			reportError('Invalid line number.');
+		else {
+			const reading = context.reading;
+			reading.line = line;
+			reading.position = 0;
+			render();
+		}
+	});
+}
+
+function startSearch() {
+	readlineFunction('Search: ', pattern => {
+		try {
+			const regExp = new RegExp(pattern);
+			context.searchPattern = pattern;
+			const reading = context.reading;
+			searchNext(regExp, reading.line, reading.position, found);
+			render();
+		} catch (e) {
+			reportError(e.toString());
+		}
+	}, {
+		history: context.searchHistory,
+		historySize: context.searchHistorySize
 	});
 }
 
@@ -294,6 +318,9 @@ function keypress(event) {
 			break;
 		case '/':
 			startSearch();
+			break;
+		case 'g':
+			goto()
 			break;
 		case 'n':
 			if (searchNext(new RegExp(context.searchPattern),

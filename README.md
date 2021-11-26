@@ -31,6 +31,7 @@ Config files store in .config/tbr/tbr.yaml. Themes configuration store in .confi
 | Forward to next position  | right               |
 | Goto start of chapter     | home                |
 | Goto end of chapter       | end                 |
+| Goto line                 | 'g'                 |
 | Next chapter              | ^D                  |
 | Previous chapter          | ^B                  |
 | Switch view mode han<=>xi | ^X                  |
