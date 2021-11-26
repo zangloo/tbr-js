@@ -145,13 +145,15 @@ function startSearch() {
 			} catch (e) {
 				reportError(e.toString());
 			}
-		}
+		} else
+			redraw();
 	}
 
 	term.moveTo(1, term.height);
 	term.grabInput(false);
 	term.hideCursor(false);
-	const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+	const rl = readline.createInterface({input: process.stdin, output: process.stdout,
+		history: context.searchHistory, historySize: context.searchHistorySize});
 	rl.question(searchPrefix, stopReadline);
 	rl.on('SIGINT', () => {
 		stopReadline();

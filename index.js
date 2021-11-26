@@ -57,6 +57,7 @@ const defaultThemes = [{
 	color: 'green',
 	background: 'black',
 }];
+const defaultSearchHistorySize = 100;
 
 function copyReading(src, dest) {
 	if (!dest)
@@ -83,6 +84,8 @@ function saveAndExit(exit) {
 		searchPattern: context.searchPattern,
 		history: history,
 		themeName: context.themeName,
+		searchHistorySize: context.searchHistorySize,
+		searchHistory: context.searchHistory,
 	}
 	const reading = context.reading;
 	if (!history.some(entry => {
@@ -187,6 +190,16 @@ function loadConfig() {
 						doc: 'cache for book'
 					}
 				}
+			},
+			searchHistorySize: {
+				doc: 'Search history size',
+				format: 'nat',
+				default: defaultSearchHistorySize,
+			},
+			searchHistory: {
+				doc: 'Search history lines',
+				format: 'Array',
+				default: [],
 			}
 
 		});
@@ -206,6 +219,8 @@ function loadConfig() {
 				return true;
 			}
 		});
+		configuration.searchHistorySize = config.get('searchHistorySize');
+		configuration.searchHistory = config.get('searchHistory');
 		if (existsSync(themeConfigFile)) {
 			const themes = convict({
 				themes: {
@@ -253,6 +268,8 @@ function loadConfig() {
 				line: 0,
 				position: 0,
 			}],
+			searchHistorySize: defaultSearchHistorySize,
+			searchHistory: [defaultSearchHistorySize],
 		}
 		const text = yaml.dump(configuration);
 		writeFileSync(configFile, text);
