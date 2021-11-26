@@ -18,6 +18,7 @@ const loaders = requireDir('./loaders');
 const {some, errorExit} = require('./common');
 const consoleTitle = require('console-title');
 const searchPrefix = 'Search: ';
+const traceSize = 100;
 
 let saveAndExit;
 let context;
@@ -152,8 +153,10 @@ function startSearch() {
 	term.moveTo(1, term.height);
 	term.grabInput(false);
 	term.hideCursor(false);
-	const rl = readline.createInterface({input: process.stdin, output: process.stdout,
-		history: context.searchHistory, historySize: context.searchHistorySize});
+	const rl = readline.createInterface({
+		input: process.stdin, output: process.stdout,
+		history: context.searchHistory, historySize: context.searchHistorySize
+	});
 	rl.question(searchPrefix, stopReadline);
 	rl.on('SIGINT', () => {
 		stopReadline();
@@ -315,16 +318,20 @@ function keypress(event) {
 			prev();
 			break;
 		case 'UP':
-		case 'RIGHT':
 			context.reverse = null;
 			if (context.render.prevLine(context))
 				render();
 			break;
 		case 'DOWN':
-		case 'LEFT':
 			context.reverse = null;
 			if (context.render.nextLine(context))
 				render();
+			break;
+		case 'RIGHT':
+			toTrace(false);
+			break;
+		case 'LEFT':
+			toTrace(true);
 			break;
 		case 'HOME':
 			context.reverse = null;
@@ -359,7 +366,7 @@ function keypress(event) {
 	}
 }
 
-function render() {
+function render(noTrace) {
 	const reading = context.reading;
 	const lines = reading.content;
 	if (reading.line >= lines.length)
@@ -391,6 +398,48 @@ function render() {
 		msg = `${title}(${reading.content.length}:${reading.line})`;
 	context.region.redraw();
 	printStatus(msg, true);
+	if (noTrace !== true)
+		pushTrace();
+}
+
+function pushTrace() {
+	const reading = context.reading;
+	const trace = reading.trace;
+	const last = trace[reading.traceIndex];
+	if (last.chapter === reading.chapter && last.line === reading.line && last.position === reading.position)
+		return;
+	trace.splice(reading.traceIndex + 1);
+	trace.push({chapter: reading.chapter, line: reading.line, position: reading.position});
+	if (trace.length > traceSize)
+		trace.splice(0, trace.length - traceSize);
+	else
+		reading.traceIndex++;
+}
+
+function toTrace(back) {
+	const reading = context.reading;
+	if (back)
+		if (reading.traceIndex === 0)
+			return;
+		else
+			reading.traceIndex--;
+	else if (reading.traceIndex === reading.trace.length - 1)
+		return;
+	else
+		reading.traceIndex++;
+	const currentTrace = reading.trace[reading.traceIndex];
+	if (reading.chapter === currentTrace.chapter) {
+		reading.line = currentTrace.line;
+		reading.position = currentTrace.position;
+		render(true);
+	} else {
+		reading.chapter = currentTrace.chapter;
+		reading.line = currentTrace.line;
+		reading.position = currentTrace.position;
+		switchChapter(reading, function () {
+			render(true);
+		});
+	}
 }
 
 function initRender() {
@@ -449,10 +498,12 @@ function bookLoaded(book, reading) {
 	context.lastReading = reading.filename;
 	context.reading = reading;
 	context.reading.book = book;
+	context.reading.trace = [{chapter: reading.chapter, line: reading.line, position: reading.position}];
+	context.reading.traceIndex = 0;
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
 	switchChapter(reading, () => {
-		render();
+		render(true);
 	});
 }
 
