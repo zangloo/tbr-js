@@ -283,7 +283,7 @@ function loadConfig() {
 	}
 	const render = renders[configuration.renderName];
 	if (!render)
-		errorExit('No render named: ' + renderName);
+		errorExit('No render named: ' + configuration.renderName);
 	configuration.render = render;
 	if (!configuration.reading)
 		configuration.reading = {
