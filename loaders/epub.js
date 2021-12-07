@@ -39,7 +39,11 @@ function load(reading, callback) {
 						loadHtml(content, callback);
 				}
 			});
+		}).catch(err => {
+			callback(err.message);
 		});
+	}).catch(err => {
+		callback(err.message);
 	});
 }
 
