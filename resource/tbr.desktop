@@ -2,9 +2,9 @@
 Version=1.0
 Encoding=UTF-8
 Name=TerminalBookReader
-Exec=env node /home/zl/works/tbr/index.js %f
+Exec=env XDG_CONFIG_HOME=/home/zl/me/conf/book xfce4-terminal --initial-title=看书 --disable-server --hide-menubar -I /home/zl/me/icons/book.png --maximize --command 'node /home/zl/works/tbr/index.js %f'
 Icon=/home/zl/me/icons/book.png
-Terminal=true
+Terminal=false
 Type=Application
 Categories=Office;Viewer;Literature;
 StartupNotify=true
