@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=TerminalBookReader
+Exec=env node /home/zl/works/tbr/index.js %f
+Icon=/home/zl/me/icons/book.png
+Terminal=true
+Type=Application
+Categories=Office;Viewer;Literature;
+StartupNotify=true
+MimeType=application/epub+zip;text/plain;text/html;
