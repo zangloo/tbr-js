@@ -5,36 +5,42 @@
  * Time: 下午7:40
  */
 
-const EPub = require('epub');
+const {EpubParser} = require('@ridi/epub-parser');
 const {loadFromString: loadHtml} = require('./html');
 
-function getChapter(index, callback) {
-	const epub = this._book;
-	const chapterId = epub.toc[index].id;
-	epub.getChapterRaw(chapterId, (error, text) => {
-		if (error)
-			callback([error.toString()]);
-		if (text === null || text === undefined)
-			callback(['']);
-		else
-			loadHtml(text, callback);
-	});
+function loadTOC(points, TOC) {
+	for (let point of points) {
+		TOC.push({title: point.label, spineId: point.spine.id});
+		loadTOC(point.children, TOC);
+	}
 }
 
 function load(reading, callback) {
 	const filename = reading.filename;
-	const epub = new EPub(filename);
-	epub.on('end', () => {
-		callback(null, {
-			_book: epub,
-			toc: epub.toc,
-			getChapter
+	const parser = new EpubParser(filename);
+	parser.parse().then(epub => {
+		const toc = [];
+		loadTOC(epub.ncx.navPoints, toc);
+		parser.readItems(epub.spines).then(content => {
+			const length = epub.spines.length;
+			const map = {};
+			for (let i = 0; i < length; i++)
+				map[epub.spines[i].id] = content[i];
+			for (let single of toc)
+				single.content = map[single.spineId];
+			callback(null, {
+				_book: epub,
+				toc: toc,
+				getChapter(index, callback) {
+					const content = toc[index].content;
+					if (content === null || content === undefined)
+						callback(['']);
+					else
+						loadHtml(content, callback);
+				}
+			});
 		});
 	});
-	epub.on('error', function (error) {
-		callback(error.toString());
-	});
-	epub.parse();
 }
 
 function support(filename) {

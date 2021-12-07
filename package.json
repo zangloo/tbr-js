@@ -19,7 +19,7 @@
     "iconv-lite": "^0.6.3",
     "commander": "^8.3.0",
     "convict": "^6.2.1",
-    "epub": "^1.2.1",
+    "@ridi/epub-parser": "^0.7.4-alpha.1",
     "html-to-text": "^8.1.0",
     "js-yaml": "^4.1.0",
     "require-dir": "^1.2.0",

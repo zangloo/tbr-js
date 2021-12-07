@@ -408,12 +408,7 @@ function render(noTrace) {
 	region.clear();
 	context.render.draw(context);
 	let msg;
-	let title = reading.book.toc[reading.chapter].title;
-	if (!title)
-		if (typeof reading.book.tocTitle === 'function')
-			title = reading.book.tocTitle(reading.chapter);
-		else
-			title = 'No name';
+	let title = reading.book.tocTitle(reading.chapter);
 	if (context.debug) {
 		msg = `[${region.width()}:${region.height()}]${title}(${reading.line}:${reading.position})`;
 		const next = context.next;
@@ -559,6 +554,11 @@ function start(reading) {
 			loader.load(reading, function (error, book) {
 				if (error)
 					return reportError(error);
+				if (!book.tocTitle)
+					book.tocTitle = (index) => {
+						const title = book.toc[index].title;
+						return title ? title : 'No name';
+					};
 				bookLoaded(book, reading)
 			});
 			return true;

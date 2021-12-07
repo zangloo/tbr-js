@@ -12,9 +12,9 @@ class Chapter extends List {
 	constructor(context, term, closeCallback, options) {
 		const entries = [];
 		const reading = context.reading;
-		reading.book.toc.forEach(topic => {
-			entries.push(topic);
-		})
+		const length = reading.book.toc.length;
+		for (let i = 0; i < length; i++)
+			entries.push({title: reading.book.tocTitle(i)});
 		options.selectedIndex = reading.chapter;
 		super(term, entries, 'Select chapter', closeCallback, options);
 	}
