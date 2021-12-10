@@ -341,6 +341,7 @@ function keypress(event) {
 			next();
 			break;
 		case 'PAGE_UP':
+		case 'b':
 			context.reverse = null;
 			prev();
 			break;
