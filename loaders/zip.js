@@ -15,7 +15,6 @@ function load(reading, callback) {
 	const zip = new AdmZip(reading.filename);
 	const zipEntries = zip.getEntries();
 	const toc = [];
-	let detectedContent;
 	zipEntries.forEach(function (zipEntry) {
 		if (zipEntry.isDirectory) return;
 		let filename;
@@ -29,7 +28,6 @@ function load(reading, callback) {
 				reading.cache = {fileEncoding: []};
 			reading.cache.filenameEncoding = encoding;
 			reading.cache.fileEncoding.push({filename: filename, encoding: encoding});
-			detectedContent = iconv.decode(data, encoding);
 		}
 		if (txt.support(filename))
 			toc.push({title: filename, _entry: zipEntry, txt: true});
@@ -45,33 +43,29 @@ function load(reading, callback) {
 		_zip: zip,
 		toc,
 		getChapter(index, callback) {
-			if (index === 0 && detectedContent) {
-				callback(detectedContent);
-				detectedContent = null;
-			}
-
 			const single = toc[index];
-			let lines = [];
 			const buffer = single._entry.getData();
+			let encoding;
+			if (reading.cache && reading.cache.fileEncoding)
+				for (let fe of reading.cache.fileEncoding)
+					if (fe.filename === single.title)
+						encoding = fe.encoding;
+			if (!encoding) {
+				encoding = detectEncoding(buffer);
+				if (!reading.cache)
+					reading.cache = {fileEncoding: []};
+				else if (!reading.cache.fileEncoding)
+					reading.cache.fileEncoding = [];
+				reading.cache.fileEncoding.push({filename: single.title, encoding: encoding});
+			}
+			const text = iconv.decode(buffer, encoding);
+
+			let lines = [];
 			if (single.txt) {
-				let encoding;
-				if (reading.cache && reading.cache.fileEncoding)
-					for (let fe of reading.cache.fileEncoding)
-						if (fe.filename === single.title)
-							encoding = fe.encoding;
-				if (!encoding) {
-					encoding = detectEncoding(buffer);
-					if (!reading.cache)
-						reading.cache = {fileEncoding: []};
-					else if (!reading.cache.fileEncoding)
-						reading.cache.fileEncoding = [];
-					reading.cache.fileEncoding.push({filename: single.title, encoding: encoding});
-				}
-				const text = iconv.decode(buffer, encoding);
 				lines = txt.loadFromString(text)
+				callback(lines);
 			} else if (single.html)
-				lines = html.loadFromString(single._entry.toString());
-			callback(lines);
+				lines = html.loadFromString(text, callback);
 		},
 	})
 }
