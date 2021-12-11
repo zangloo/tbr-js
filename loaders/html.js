@@ -43,7 +43,7 @@ function loadFromString(string, callback) {
 }
 
 function support(filename) {
-	return filename.endsWith('.html') || filename.endsWith('.hml');
+	return filename.endsWith('.html') || filename.endsWith('.htm');
 }
 
 exports.load = load;
