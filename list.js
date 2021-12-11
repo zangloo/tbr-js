@@ -51,6 +51,7 @@ class List extends Region {
 				this.#refresh(maxLines);
 				break;
 			case 'PAGE_DOWN':
+			case ' ':
 				if (this.#currentSelection === this.#entries.length - 1)
 					break;
 				this.#currentSelection += maxLines;
@@ -59,6 +60,7 @@ class List extends Region {
 				this.#refresh(maxLines)
 				break;
 			case 'PAGE_UP':
+			case 'b':
 				if (this.#currentSelection === 0)
 					break;
 				this.#currentSelection -= maxLines;
