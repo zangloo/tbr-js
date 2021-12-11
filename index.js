@@ -271,12 +271,10 @@ function loadConfig() {
 			searchHistorySize: defaultSearchHistorySize,
 			searchHistory: [defaultSearchHistorySize],
 		}
-		const text = yaml.dump(configuration);
-		writeFileSync(configFile, text);
 	}
 	if (!configuration.themes) {
 		configuration.themes = defaultThemes;
-		if (configuration.themeName === null)
+		if (!configuration.themeName)
 			configuration.themeName = configuration.themes[0].name;
 		const text = yaml.dump({themes: configuration.themes});
 		writeFileSync(themeConfigFile, text);
