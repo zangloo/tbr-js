@@ -15,20 +15,19 @@ function load(reading, callback) {
 	const zip = new AdmZip(reading.filename);
 	const zipEntries = zip.getEntries();
 	const toc = [];
+	let detectedContent;
 	zipEntries.forEach(function (zipEntry) {
 		if (zipEntry.isDirectory) return;
 		let filenameEncoding;
 		if (reading.cache && reading.cache.filenameEncoding)
 			filenameEncoding = reading.cache.filenameEncoding
 		else {
-			filenameEncoding = detectEncoding(zipEntry.rawEntryName)
-			if (filenameEncoding === null) {
-				const data = zipEntry.getData();
-				filenameEncoding = detectEncoding(data);
-			}
+			const data = zipEntry.getData();
+			filenameEncoding = detectEncoding(data);
 			if (!reading.cache)
 				reading.cache = {};
 			reading.cache.filenameEncoding = filenameEncoding;
+			detectedContent = iconv.decode(data, filenameEncoding);
 		}
 		const filename = iconv.decode(zipEntry.rawEntryName, filenameEncoding);
 		if (txt.support(filename))
@@ -45,6 +44,10 @@ function load(reading, callback) {
 		_zip: zip,
 		toc,
 		getChapter(index, callback) {
+			if (index === 0 && detectedContent){
+				callback(detectedContent);
+				detectedContent = null;
+			}
 			const single = toc[index];
 			let lines = [];
 			const buffer = single._entry.getData();
