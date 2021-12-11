@@ -34,7 +34,6 @@ function load(reading, callback) {
 			single.txt = true;
 		else if (html.support(filename))
 			single.html = true;
-		toc.push(single)
 		pushAndSort(single, toc, (a, b) => {
 			return a.title.localeCompare(b.title, undefined, {numeric: true});
 		});
