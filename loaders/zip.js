@@ -46,8 +46,7 @@ function load(reading, callback) {
 						if (fe.filename === single.title)
 							encoding = fe.encoding;
 				if (!encoding) {
-					const charsets = detectEncoding(buffer);
-					encoding = charsets[0].charsetName;
+					encoding = detectEncoding(buffer);
 					if (!reading.cache)
 						reading.cache = {fileEncoding: []};
 					else if (!reading.cache.fileEncoding)
