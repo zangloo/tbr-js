@@ -4,6 +4,7 @@
  * Date: 2021/11/17
  * Time: 下午8:03
  */
+const detect = require('charset-detector');
 const leadingSpace = 2;
 
 function withLeading(text) {
@@ -67,6 +68,11 @@ function locationOf(element, array, compare, start, end) {
 		return locationOf(element, array, compare, start, pivot);
 }
 
+function detectEncoding(buffer) {
+	const charsets = detect(buffer);
+	return charsets[0].charsetName;
+}
+
 module.exports = {
 	each,
 	some,
@@ -75,4 +81,5 @@ module.exports = {
 	leadingSpace,
 	errorExit,
 	pushAndSort,
+	detectEncoding,
 };

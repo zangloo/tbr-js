@@ -31,6 +31,8 @@ function cleanUp() {
 	term.styleReset();
 	term.clear();
 	consoleTitle('');
+	if (context.reading.loader.unload)
+		context.reading.loader.unload(context.reading.book);
 }
 
 function exit() {
@@ -510,19 +512,29 @@ function resize(noRender) {
  *         getChapter: chapter loader function(<toc index>): content array
  *                 content: string
  *         }
+ *         loader: set to reading info
  * }
  * @param reading opened file reading info
  */
-function bookLoaded(book, reading) {
+function bookLoaded(book, reading, loader) {
 	const origBook = context.reading.book;
-	if (origBook)
+	if (origBook) {
+		if (context.reading.loader.unload)
+			context.reading.loader.unload(context.reading.book);
+		delete context.reading.book;
+		delete context.reading.content;
+		delete context.reading.loader;
+		delete context.reading.trace;
+		delete context.reading.traceIndex;
 		saveAndExit(false);
+	}
 	consoleTitle(reading.filename);
 	context.lastReading = reading.filename;
 	context.reading = reading;
 	context.reading.book = book;
 	context.reading.trace = [{chapter: reading.chapter, line: reading.line, position: reading.position}];
 	context.reading.traceIndex = 0;
+	context.reading.loader = loader;
 	if (book.toc.length <= reading.chapter)
 		reading.chapter = book.toc.length - 1;
 	switchChapter(reading, () => {
@@ -560,7 +572,7 @@ function start(reading) {
 						const title = book.toc[index].title;
 						return title ? title : 'No name';
 					};
-				bookLoaded(book, reading)
+				bookLoaded(book, reading, loader)
 			});
 			return true;
 		} else

@@ -82,7 +82,7 @@ function saveAndExit(exit) {
 		renderName: context.renderName,
 		lastReading: context.lastReading,
 		searchPattern: context.searchPattern,
-		history: history,
+		history: [],
 		themeName: context.themeName,
 		searchHistorySize: context.searchHistorySize,
 		searchHistory: context.searchHistory,
@@ -91,16 +91,16 @@ function saveAndExit(exit) {
 	if (!history.some(entry => {
 		if (entry.filename === context.lastReading) {
 			copyReading(reading, entry);
-			delete reading.book;
-			delete reading.content
 			entry.ts = new Date().getTime();
 			return true;
 		}
 	})) {
-		const copy = copyReading(context.reading);
+		const copy = copyReading(reading);
 		copy.ts = new Date().getTime();
 		history.push(copy);
 	}
+	for (let entry of history)
+		configuration.history.push(copyReading(entry));
 	const text = yaml.dump(configuration);
 	writeFileSync(configFile, text);
 	if (exit)
@@ -187,7 +187,7 @@ function loadConfig() {
 						default: 0
 					},
 					cache: {
-						doc: 'cache for book'
+						doc: 'cache for book',
 					}
 				}
 			},

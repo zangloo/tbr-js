@@ -6,7 +6,7 @@
  */
 
 const {readFileSync} = require('fs');
-const detect = require('charset-detector');
+const {detectEncoding} = require('../common');
 const iconv = require('iconv-lite');
 
 function load(reading, callback) {
@@ -16,8 +16,7 @@ function load(reading, callback) {
 	if (reading.cache && reading.cache.encoding)
 		encoding = reading.cache.encoding;
 	else {
-		const charsets = detect(buffer);
-		encoding = charsets[0].charsetName;
+		encoding = detectEncoding(buffer);
 		reading.cache = {encoding: encoding};
 	}
 	const text = iconv.decode(buffer, encoding);
