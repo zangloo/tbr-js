@@ -30,9 +30,9 @@ function load(reading, callback) {
 			reading.cache.fileEncoding.push({filename: filename, encoding: encoding});
 		}
 		const single = {title: filename, _entry: zipEntry};
-		if (txt.support(filename))
+		if (txt.support(filename.toLowerCase()))
 			single.txt = true;
-		else if (html.support(filename))
+		else if (html.support(filename.toLowerCase()))
 			single.html = true;
 		pushAndSort(single, toc, (a, b) => {
 			return a.title.localeCompare(b.title, undefined, {numeric: true});

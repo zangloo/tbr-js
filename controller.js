@@ -562,7 +562,7 @@ function start(reading) {
 	if (!existsSync(reading.filename))
 		reportError('File not exists: ' + reading.filename);
 	if (!some(loaders, (name, loader) => {
-		if (loader.support(reading.filename)) {
+		if (loader.support(reading.filename.toLowerCase())) {
 			printStatus('Loading...');
 			loader.load(reading, function (error, book) {
 				if (error)
