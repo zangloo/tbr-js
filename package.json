@@ -15,7 +15,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "ansiterm": "^1.1.0",
-    "charset-detector": "^0.0.2",
+    "jschardet": "^3.0.0",
     "iconv-lite": "^0.6.3",
     "commander": "^8.3.0",
     "convict": "^6.2.1",

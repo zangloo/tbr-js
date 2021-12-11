@@ -22,6 +22,10 @@ function load(reading, callback) {
 			filenameEncoding = reading.cache.filenameEncoding
 		else {
 			filenameEncoding = detectEncoding(zipEntry.rawEntryName)
+			if (filenameEncoding === null) {
+				const data = zipEntry.getData();
+				filenameEncoding = detectEncoding(data);
+			}
 			if (!reading.cache)
 				reading.cache = {};
 			reading.cache.filenameEncoding = filenameEncoding;
