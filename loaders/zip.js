@@ -7,7 +7,7 @@
 
 const AdmZip = require("adm-zip");
 const iconv = require('iconv-lite');
-const {detectEncoding} = require('../common');
+const {detectEncoding, pushAndSort} = require('../common');
 const html = require('./html');
 const txt = require('./txt');
 
@@ -29,10 +29,15 @@ function load(reading, callback) {
 			reading.cache.filenameEncoding = encoding;
 			reading.cache.fileEncoding.push({filename: filename, encoding: encoding});
 		}
+		const single = {title: filename, _entry: zipEntry};
 		if (txt.support(filename))
-			toc.push({title: filename, _entry: zipEntry, txt: true});
+			single.txt = true;
 		else if (html.support(filename))
-			toc.push({title: filename, _entry: zipEntry, html: true});
+			single.html = true;
+		toc.push(single)
+		pushAndSort(single, toc, (a, b) => {
+			return a.title.localeCompare(b.title, undefined, {numeric: true});
+		});
 	});
 	if (toc.length === 0) {
 		callback('No supported file found in zip file: ' + reading.filename);
