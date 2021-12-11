@@ -4,7 +4,7 @@
  * Date: 2021/11/17
  * Time: 下午8:03
  */
-const jschardet = require("jschardet");
+const detect = require("charset-detector");
 const leadingSpace = 2;
 
 function withLeading(text) {
@@ -69,8 +69,8 @@ function locationOf(element, array, compare, start, end) {
 }
 
 function detectEncoding(buffer) {
-	const info = jschardet.detect(buffer);
-	return info.encoding;
+	const charsets = detect(buffer);
+	return charsets[0].charsetName;
 }
 
 module.exports = {
