@@ -32,6 +32,11 @@ function load(reading, callback) {
 		else if (html.support(filename))
 			toc.push({title: filename, _entry: zipEntry, html: true});
 	});
+	if (toc.length === 0) {
+		callback('No supported file found in zip file: ' + reading.filename);
+		return;
+	}
+
 	callback(null, {
 		_zip: zip,
 		toc,

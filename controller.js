@@ -31,7 +31,7 @@ function cleanUp() {
 	term.styleReset();
 	term.clear();
 	consoleTitle('');
-	if (context.reading.loader.unload)
+	if (context.reading.loader && context.reading.loader.unload)
 		context.reading.loader.unload(context.reading.book);
 }
 
