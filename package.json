@@ -26,6 +26,7 @@
     "terminal-kit": "^2.2.3",
     "adm-zip": "^0.5.9",
     "pdf2json": "^2.0.0",
+    "tmp": "^0.2.1",
     "console-title": "^1.1.0"
   },
   "repository": {

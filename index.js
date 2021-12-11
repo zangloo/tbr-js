@@ -23,7 +23,7 @@ const path = require("path");
 const {mkdirSync, existsSync, writeFileSync} = require('fs');
 const yaml = require('js-yaml');
 const renders = requireDir('./renders');
-const {errorExit} = require('./common');
+const {errorExit, configFolder, configFile, themeConfigFile, cacheFolder} = require('./common');
 const Controller = require('./controller');
 
 const colors = [
@@ -72,10 +72,6 @@ function copyReading(src, dest) {
 	return dest;
 }
 
-const configFolder = process.env.HOME + '/.config/tbr';
-const configFile = configFolder + '/tbr.yaml';
-const themeConfigFile = configFolder + '/themes.yaml';
-
 function saveAndExit(exit) {
 	const history = context.history;
 	const configuration = {
@@ -109,6 +105,7 @@ function saveAndExit(exit) {
 
 function loadConfig() {
 	mkdirSync(configFolder, {recursive: true});
+	mkdirSync(cacheFolder, {recursive: true});
 	let configuration;
 	if (existsSync(configFile)) {
 		const convict = require('convict');

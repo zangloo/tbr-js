@@ -5,7 +5,14 @@
  * Time: 下午8:03
  */
 const detect = require("charset-detector");
+const tmp = require('tmp');
+const fs = require("fs");
 const leadingSpace = 2;
+
+const configFolder = process.env.HOME + '/.config/tbr';
+const configFile = configFolder + '/tbr.yaml';
+const themeConfigFile = configFolder + '/themes.yaml';
+const cacheFolder = process.env.HOME + '/.cache/tbr/';
 
 function withLeading(text) {
 	if (text.length === 0)
@@ -73,6 +80,28 @@ function detectEncoding(buffer) {
 	return charsets[0].charsetName;
 }
 
+function cacheContent(prefix, suffix, content, callback) {
+	tmp.file({
+		tmpdir: cacheFolder,
+		prefix: prefix,
+		postfix: suffix,
+		keep: true
+	}, function (err, path, fd, ignoreCleanupCallback) {
+		if (err)
+			callback(err);
+		else {
+			fs.write(fd, content, (err) => {
+				if (err)
+					callback(err);
+				else {
+					fs.close(fd);
+					callback(err, path);
+				}
+			});
+		}
+	});
+}
+
 module.exports = {
 	each,
 	some,
@@ -82,4 +111,9 @@ module.exports = {
 	errorExit,
 	pushAndSort,
 	detectEncoding,
+	configFolder,
+	configFile,
+	themeConfigFile,
+	cacheFolder,
+	cacheContent,
 };
