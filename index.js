@@ -46,16 +46,33 @@ const colors = [
 ];
 const defaultThemes = [{
 	name: 'default',
-	color: null,
-	background: null,
+	text: {
+		color: null,
+		background: null
+	},
+	status: {
+		color: 'green',
+		background: null
+	}
 }, {
 	name: 'white on black',
-	color: 'brightWhite',
-	background: 'black',
+	text: {
+		color: 'brightWhite',
+		background: 'black',
+	},
+	status: {
+		color: 'black',
+		background: 'brightWhite',
+	}
 }, {
-	name: 'green on black',
-	color: 'green',
-	background: 'black',
+	name: 'green on black', text: {
+		color: 'green',
+		background: 'black',
+	},
+	status: {
+		color: 'black',
+		background: 'green',
+	}
 }];
 const defaultSearchHistorySize = 100;
 
@@ -231,17 +248,33 @@ function loadConfig() {
 							nullable: false,
 							default: null,
 						},
-						color: {
-							doc: 'text color',
-							format: 'fontColor',
-							nullable: true,
-							default: null,
+						text: {
+							color: {
+								doc: 'text color',
+								format: 'fontColor',
+								nullable: true,
+								default: null,
+							},
+							background: {
+								doc: 'text background color',
+								format: 'fontColor',
+								nullable: true,
+								default: null,
+							}
 						},
-						background: {
-							doc: 'text background color',
-							format: 'fontColor',
-							nullable: true,
-							default: null,
+						status: {
+							color: {
+								doc: 'text color',
+								format: 'fontColor',
+								nullable: true,
+								default: null,
+							},
+							background: {
+								doc: 'text background color',
+								format: 'fontColor',
+								nullable: true,
+								default: null,
+							}
 						}
 					}
 				},

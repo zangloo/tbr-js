@@ -83,17 +83,28 @@ class Region {
 		let themePrefix;
 		let reversPrefix;
 		let str;
-		if (colorIndex >= 0) {
-			themePrefix = this.#palette.escape[colorIndex];
+		if (colorIndex >= 0)
+			if (backgroundIndex >= 0) {
+				themePrefix = this.#palette.escape[colorIndex];
+				themePrefix += this.#palette.bgEscape[backgroundIndex];
+				reversPrefix = this.#palette.escape[backgroundIndex];
+				reversPrefix += this.#palette.bgEscape[colorIndex];
+			} else {
+				themePrefix = '\u001b[0m';
+				themePrefix += this.#palette.escape[colorIndex];
+				reversPrefix = '\u001b[7m';
+				reversPrefix += this.#palette.escape[colorIndex];
+			}
+		else if (backgroundIndex >= 0) {
+			themePrefix = '\u001b[0m';
 			themePrefix += this.#palette.bgEscape[backgroundIndex];
-			reversPrefix = this.#palette.escape[backgroundIndex];
-			reversPrefix += this.#palette.bgEscape[colorIndex];
-			str = themePrefix;
-		} else {
-			themePrefix = ''
 			reversPrefix = '\u001b[7m';
-			str = '\u001b[0m';
+			reversPrefix += this.#palette.bgEscape[backgroundIndex];
+		} else {
+			themePrefix = '\u001b[0m';
+			reversPrefix = '\u001b[7m';
 		}
+		str = themePrefix;
 		let reversing = false;
 		for (let y = 0; y < this.#height; y++) {
 			this.term.moveTo(xShift, y + yShift);
@@ -105,10 +116,7 @@ class Region {
 					str += reversPrefix;
 				} else if (reversing) {
 					reversing = false;
-					if (colorIndex >= 0)
-						str += themePrefix;
-					else
-						str += '\u001b[0m';
+					str += themePrefix;
 				}
 				str += char.char;
 			}
@@ -116,10 +124,7 @@ class Region {
 			str = '';
 		}
 		if (reversing)
-			if (colorIndex >= 0)
-				this.term.raw(themePrefix);
-			else
-				this.term.raw('\u001b[0m');
+			this.term.raw(themePrefix);
 	}
 
 	str(x, y, string, format) {

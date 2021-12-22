@@ -256,7 +256,7 @@ function historySelect() {
 			start(reading);
 		else
 			redraw();
-	}, {theme: statusRegion.theme});
+	}, {theme: context.region.theme});
 }
 
 function chapterSelect() {
@@ -272,7 +272,7 @@ function chapterSelect() {
 			switchChapter(reading, render);
 		} else
 			redraw();
-	}, {theme: statusRegion.theme});
+	}, {theme: context.region.theme});
 }
 
 function themeSelect() {
@@ -282,11 +282,11 @@ function themeSelect() {
 		dispatchEnd();
 		if (topic) {
 			context.themeName = topic.name;
-			context.region.theme = topic;
-			statusRegion.theme = topic;
+			context.region.theme = topic.text;
+			statusRegion.theme = topic.status;
 		}
 		redraw();
-	}, {theme: statusRegion.theme});
+	}, {theme: context.region.theme});
 }
 
 function redraw() {
@@ -483,8 +483,8 @@ function initRender() {
 	term.on('resize', resize)
 	const width = term.width;
 	const height = term.height;
-	context.region = new Region(term, 0, 0, width, height - 1, currentTheme);
-	statusRegion = new Region(term, 0, height - 1, width, 1, currentTheme);
+	context.region = new Region(term, 0, 0, width, height - 1, currentTheme.text);
+	statusRegion = new Region(term, 0, height - 1, width, 1, currentTheme.status);
 }
 
 let resizedWhenDispatch = false;
