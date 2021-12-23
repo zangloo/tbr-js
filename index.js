@@ -55,14 +55,14 @@ const defaultThemes = [{
 		background: null
 	}
 }, {
-	name: 'white on black',
+	name: 'black on white',
 	text: {
-		color: 'brightWhite',
-		background: 'black',
-	},
-	status: {
 		color: 'black',
 		background: 'brightWhite',
+	},
+	status: {
+		color: 'brightWhite',
+		background: 'black',
 	}
 }, {
 	name: 'green on black', text: {
